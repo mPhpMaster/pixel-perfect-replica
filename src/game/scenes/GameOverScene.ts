@@ -3,14 +3,16 @@ import Phaser from 'phaser';
 export class GameOverScene extends Phaser.Scene {
   private score = 0;
   private wave = 1;
+  private kills = 0;
 
   constructor() {
     super({ key: 'GameOverScene' });
   }
 
-  init(data: { score: number; wave: number }): void {
+  init(data: { score: number; wave: number; kills?: number }): void {
     this.score = data.score;
     this.wave = data.wave;
+    this.kills = data.kills || 0;
   }
 
   create(): void {
@@ -22,7 +24,7 @@ export class GameOverScene extends Phaser.Scene {
     bg.fillRect(0, 0, width, height);
 
     // Game Over text
-    const gameOverText = this.add.text(width / 2, height * 0.2, 'GAME OVER', {
+    const gameOverText = this.add.text(width / 2, height * 0.15, 'GAME OVER', {
       fontFamily: '"Press Start 2P"',
       fontSize: '48px',
       color: '#ff4444',
@@ -31,8 +33,11 @@ export class GameOverScene extends Phaser.Scene {
     });
     gameOverText.setOrigin(0.5);
 
+    // Stats container
+    const statsY = height * 0.35;
+    
     // Score display
-    const scoreText = this.add.text(width / 2, height * 0.4, `SCORE: ${this.score}`, {
+    const scoreText = this.add.text(width / 2, statsY, `SCORE: ${this.score}`, {
       fontFamily: '"Press Start 2P"',
       fontSize: '24px',
       color: '#ffaa00',
@@ -40,17 +45,25 @@ export class GameOverScene extends Phaser.Scene {
     scoreText.setOrigin(0.5);
 
     // Wave reached
-    const waveText = this.add.text(width / 2, height * 0.5, `WAVE REACHED: ${this.wave}`, {
+    const waveText = this.add.text(width / 2, statsY + 50, `WAVE: ${this.wave}`, {
       fontFamily: '"Press Start 2P"',
       fontSize: '16px',
       color: '#00d4aa',
     });
     waveText.setOrigin(0.5);
 
+    // Kills
+    const killsText = this.add.text(width / 2, statsY + 90, `KILLS: ${this.kills}`, {
+      fontFamily: '"Press Start 2P"',
+      fontSize: '14px',
+      color: '#ff6666',
+    });
+    killsText.setOrigin(0.5);
+
     // High score check
     const highScore = parseInt(localStorage.getItem('tater_highscore') || '0', 10);
     if (this.score >= highScore && this.score > 0) {
-      const newHighText = this.add.text(width / 2, height * 0.58, 'NEW HIGH SCORE!', {
+      const newHighText = this.add.text(width / 2, statsY + 130, '★ NEW HIGH SCORE! ★', {
         fontFamily: '"Press Start 2P"',
         fontSize: '14px',
         color: '#44ff44',
