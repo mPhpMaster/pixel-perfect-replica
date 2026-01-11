@@ -2,9 +2,10 @@ import Phaser from 'phaser';
 
 export class XPGem extends Phaser.Physics.Arcade.Sprite {
   value: number;
-  private magnetDistance = 100;
+  magnetDistance = 100;
   private magnetSpeed = 300;
   private player: Phaser.Physics.Arcade.Sprite | null = null;
+  private floatTween: Phaser.Tweens.Tween | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, value: number) {
     super(scene, x, y, 'xp_gem');
@@ -26,7 +27,7 @@ export class XPGem extends Phaser.Physics.Arcade.Sprite {
     });
 
     // Float animation
-    scene.tweens.add({
+    this.floatTween = scene.tweens.add({
       targets: this,
       y: '+=5',
       duration: 1000,
@@ -53,13 +54,30 @@ export class XPGem extends Phaser.Physics.Arcade.Sprite {
       
       // Magnet effect when close to player
       if (distance < this.magnetDistance) {
+        // Stop floating animation when magnetized so physics can take over fully
+        if (this.floatTween) {
+            this.floatTween.stop();
+            this.floatTween = null;
+        }
+
+        // Bring to front when flying towards player
+        this.setDepth(11);
+
         const angle = Phaser.Math.Angle.Between(this.x, this.y, this.player.x, this.player.y);
         const body = this.body as Phaser.Physics.Arcade.Body;
-        const speed = this.magnetSpeed * (1 - distance / this.magnetDistance);
+        
+        // Constant speed to ensure it catches up
+        const speed = this.magnetSpeed;
+        
         body.setVelocity(
           Math.cos(angle) * speed,
           Math.sin(angle) * speed
         );
+      } else {
+        // Reset depth and stop moving if out of range
+        this.setDepth(3);
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        body.setVelocity(0, 0);
       }
     }
   }

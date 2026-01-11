@@ -22,7 +22,7 @@ export function createDeathParticles(
       y: y + Math.sin(angle) * speed,
       alpha: 0,
       scale: 0.2,
-      duration: Phaser.Math.Between(300, 500),
+      duration: Phaser.Math.Between(3000, 5000),
       ease: 'Power2',
       onComplete: () => particle.destroy(),
     });
@@ -36,7 +36,7 @@ export function createDamageNumber(
   amount: number,
   color: string = '#ff4444'
 ): void {
-  const text = scene.add.text(x, y, `-${amount}`, {
+  const text = scene.add.text(x, y, `${amount}`, {
     fontFamily: '"Press Start 2P"',
     fontSize: '12px',
     color,
@@ -51,7 +51,7 @@ export function createDamageNumber(
     y: y - 40,
     alpha: 0,
     scale: 1.5,
-    duration: 600,
+    duration: 1000,
     ease: 'Power2',
     onComplete: () => text.destroy(),
   });
@@ -63,7 +63,7 @@ export function createXPPopup(
   y: number,
   amount: number
 ): void {
-  const text = scene.add.text(x, y, `+${amount} XP`, {
+  const text = scene.add.text(x, y, `${amount} XP`, {
     fontFamily: '"Press Start 2P"',
     fontSize: '10px',
     color: '#aa44ff',
@@ -77,7 +77,7 @@ export function createXPPopup(
     targets: text,
     y: y - 30,
     alpha: 0,
-    duration: 800,
+    duration: 1000,
     ease: 'Power2',
     onComplete: () => text.destroy(),
   });
@@ -93,7 +93,7 @@ export function createLevelUpEffect(scene: Phaser.Scene, x: number, y: number): 
     targets: ring,
     radius: 100,
     alpha: 0,
-    duration: 500,
+    duration: 5000,
     ease: 'Power2',
     onComplete: () => ring.destroy(),
   });
@@ -112,7 +112,7 @@ export function createLevelUpEffect(scene: Phaser.Scene, x: number, y: number): 
       alpha: 0,
       rotation: Math.PI,
       scale: 0.3,
-      duration: 400,
+      duration: 4000,
       ease: 'Power2',
       onComplete: () => particle.destroy(),
     });

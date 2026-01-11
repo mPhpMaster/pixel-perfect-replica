@@ -69,8 +69,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       targets: this,
       alpha: 1,
       scale: config.scale,
-      duration: 200,
-      ease: 'Back.easeOut',
+      duration: 2000,
+      ease: 'Power2',
     });
   }
 
@@ -129,7 +129,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       targets: this,
       alpha: 0,
       scale: 0.5,
-      duration: 150,
+      duration: 1000,
       onComplete: () => {
         this.destroy();
       },

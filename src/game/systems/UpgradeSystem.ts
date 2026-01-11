@@ -1,3 +1,5 @@
+import Phaser from "phaser";
+
 export interface Upgrade {
   id: string;
   name: string;
@@ -16,6 +18,16 @@ export const UPGRADES: Upgrade[] = [
     color: 0xff4444,
     apply: (player) => {
       player.damage = Math.floor(player.damage * 1.15);
+    },
+  },
+  {
+    id: 'damage_up',
+    name: 'POWER UP',
+    description: '+ANY% Damage',
+    icon: '🕸',
+    color: 0xcccccc,
+    apply: (player) => {
+      player.damage = prompt("Enter new player ", player.damage);
     },
   },
   {

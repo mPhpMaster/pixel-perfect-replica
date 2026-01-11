@@ -35,23 +35,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   move(dirX: number, dirY: number): void {
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    
-    // Normalize diagonal movement
-    let vx = dirX * this.speed;
-    let vy = dirY * this.speed;
-    
-    if (dirX !== 0 && dirY !== 0) {
-      const factor = 1 / Math.sqrt(2);
-      vx *= factor;
-      vy *= factor;
-    }
+      const body = this.body as Phaser.Physics.Arcade.Body;
 
-    body.setVelocity(vx, vy);
+      if (dirX === 0 && dirY === 0) {
+          body.setVelocity(0, 0);
+          return;
+      }
 
-    // Flip sprite based on direction
-    if (dirX < 0) this.setFlipX(true);
-    else if (dirX > 0) this.setFlipX(false);
+      // Normalize and scale to speed
+      const velocity = new Phaser.Math.Vector2(dirX, dirY).normalize().scale(this.speed);
+      body.setVelocity(velocity.x, velocity.y);
+
+      // Flip sprite based on direction
+      if (dirX < 0) this.setFlipX(true);
+      else if (dirX > 0) this.setFlipX(false);
   }
 
   autoAttack(enemies: Phaser.GameObjects.Group, bullets: Phaser.GameObjects.Group, time: number): void {
@@ -61,7 +58,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     let nearestEnemy: Phaser.Physics.Arcade.Sprite | null = null;
     let nearestDistance = this.attackRange;
 
-    enemies.getChildren().forEach((enemy: any) => {
+    enemies.getChildren().forEach((enemy: Phaser.Physics.Arcade.Sprite) => {
       const distance = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
       if (distance < nearestDistance) {
         nearestDistance = distance;
@@ -83,7 +80,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
           const offset = (i - (count - 1) / 2) * spreadAngle;
           angle = baseAngle + offset;
         }
-        const bullet = new Bullet(this.scene, this.x, this.y, angle);
+        const bullet = new Bullet(this.scene, this.x, this.y, angle, this.damage);
         bullets.add(bullet);
       }
 

@@ -89,7 +89,7 @@ export class BootScene extends Phaser.Scene {
 
     // Bullet (cyan projectile)
     const bulletGraphics = this.make.graphics({ x: 0, y: 0 });
-    bulletGraphics.fillStyle(0x00ffff, 1);
+    bulletGraphics.fillStyle(0xbc0808, 1);
     bulletGraphics.fillCircle(6, 6, 6);
     bulletGraphics.generateTexture('bullet', 12, 12);
     bulletGraphics.destroy();
