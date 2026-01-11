@@ -5,6 +5,7 @@ import { GameScene } from './scenes/GameScene';
 import { HUDScene } from './scenes/HUDScene';
 import { PauseScene } from './scenes/PauseScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { UpgradeScene } from './scenes/UpgradeScene';
 
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
@@ -27,5 +28,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, MainMenuScene, GameScene, HUDScene, PauseScene, GameOverScene],
+  scene: [BootScene, MainMenuScene, GameScene, HUDScene, PauseScene, GameOverScene, UpgradeScene],
 };

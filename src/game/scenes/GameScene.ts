@@ -3,6 +3,8 @@ import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 import { Bullet } from '../entities/Bullet';
 import { XPGem } from '../entities/XPGem';
+import { HealthPickup } from '../entities/HealthPickup';
+import { createDeathParticles, createDamageNumber, createXPPopup } from '../entities/Particle';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 
 export class GameScene extends Phaser.Scene {
@@ -10,6 +12,7 @@ export class GameScene extends Phaser.Scene {
   enemies!: Phaser.GameObjects.Group;
   bullets!: Phaser.GameObjects.Group;
   xpGems!: Phaser.GameObjects.Group;
+  healthPickups!: Phaser.GameObjects.Group;
 
   // Game state
   wave = 1;
@@ -21,6 +24,7 @@ export class GameScene extends Phaser.Scene {
   spawnInterval = 2000;
   score = 0;
   isPaused = false;
+  killCount = 0;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasdKeys!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
@@ -37,6 +41,7 @@ export class GameScene extends Phaser.Scene {
     this.spawnTimer = 0;
     this.score = 0;
     this.isPaused = false;
+    this.killCount = 0;
 
     // Create game world bounds (larger than camera)
     const worldWidth = GAME_WIDTH * 2;
@@ -50,6 +55,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies = this.add.group({ classType: Enemy, runChildUpdate: true });
     this.bullets = this.add.group({ classType: Bullet, runChildUpdate: true });
     this.xpGems = this.add.group({ classType: XPGem, runChildUpdate: true });
+    this.healthPickups = this.add.group({ classType: HealthPickup, runChildUpdate: true });
 
     // Create player at center
     this.player = new Player(this, worldWidth / 2, worldHeight / 2);
@@ -81,6 +87,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.bullets, this.enemies, this.bulletHitEnemy, undefined, this);
     this.physics.add.overlap(this.player, this.enemies, this.playerHitEnemy, undefined, this);
     this.physics.add.overlap(this.player, this.xpGems, this.collectXP, undefined, this);
+    this.physics.add.overlap(this.player, this.healthPickups, this.collectHealth, undefined, this);
 
     // Launch HUD
     this.scene.launch('HUDScene', { gameScene: this });
@@ -103,10 +110,21 @@ export class GameScene extends Phaser.Scene {
       graphics.lineTo(worldWidth, y);
     }
     graphics.strokePath();
+
+    // Corner markers
+    graphics.lineStyle(2, 0x00d4aa, 0.3);
+    graphics.strokeRect(50, 50, worldWidth - 100, worldHeight - 100);
   }
 
   update(time: number, delta: number): void {
     if (this.isPaused) return;
+
+    // Check for pending level up
+    if (this.player.pendingLevelUp) {
+      this.player.pendingLevelUp = false;
+      this.showUpgradeSelection();
+      return;
+    }
 
     // Handle player movement
     const moveX = (this.cursors.right.isDown || this.wasdKeys.D.isDown ? 1 : 0) - 
@@ -119,6 +137,11 @@ export class GameScene extends Phaser.Scene {
 
     // Auto-attack nearest enemy
     this.player.autoAttack(this.enemies, this.bullets, time);
+
+    // Update XP gems with player magnet range
+    this.xpGems.getChildren().forEach((gem: any) => {
+      gem.magnetDistance = this.player.magnetRange;
+    });
 
     // Wave timer
     this.waveTimer += delta;
@@ -143,6 +166,7 @@ export class GameScene extends Phaser.Scene {
       wave: this.wave,
       waveProgress: this.waveTimer / this.waveDuration,
       score: this.score,
+      kills: this.killCount,
     });
   }
 
@@ -171,13 +195,27 @@ export class GameScene extends Phaser.Scene {
 
     // Flash effect
     this.cameras.main.flash(500, 0, 212, 170, false);
+    
+    // Spawn health pickup on wave transition
+    if (this.wave % 2 === 0) {
+      const pickup = new HealthPickup(this, this.player.x + Phaser.Math.Between(-100, 100), this.player.y + Phaser.Math.Between(-100, 100));
+      this.healthPickups.add(pickup);
+    }
   }
 
   private bulletHitEnemy(bullet: any, enemy: any): void {
     bullet.destroy();
+    
+    createDamageNumber(this, enemy.x, enemy.y - 20, this.player.damage);
+    
     const killed = enemy.takeDamage(this.player.damage);
     if (killed) {
       this.score += enemy.scoreValue;
+      this.killCount++;
+      
+      // Death particles
+      createDeathParticles(this, enemy.x, enemy.y, enemy.enemyColor, 10);
+      
       // Spawn XP gem
       const gem = new XPGem(this, enemy.x, enemy.y, enemy.xpValue);
       this.xpGems.add(gem);
@@ -188,12 +226,50 @@ export class GameScene extends Phaser.Scene {
     if (this.player.takeDamage(enemy.damage)) {
       this.gameOver();
     }
+    createDeathParticles(this, enemy.x, enemy.y, enemy.enemyColor, 6);
     enemy.destroy();
   }
 
   private collectXP(_player: any, gem: any): void {
+    createXPPopup(this, gem.x, gem.y, gem.value);
     this.player.gainXP(gem.value);
     gem.destroy();
+  }
+
+  private collectHealth(_player: any, pickup: any): void {
+    const healAmount = Math.floor(this.player.maxHealth * 0.25);
+    this.player.health = Math.min(this.player.maxHealth, this.player.health + healAmount);
+    
+    // Heal popup
+    const text = this.add.text(pickup.x, pickup.y, `+${healAmount} HP`, {
+      fontFamily: '"Press Start 2P"',
+      fontSize: '10px',
+      color: '#44ff44',
+      stroke: '#000000',
+      strokeThickness: 2,
+    });
+    text.setOrigin(0.5);
+    text.setDepth(20);
+    this.tweens.add({
+      targets: text,
+      y: pickup.y - 30,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => text.destroy(),
+    });
+    
+    pickup.destroy();
+  }
+
+  private showUpgradeSelection(): void {
+    this.isPaused = true;
+    this.physics.pause();
+    this.scene.launch('UpgradeScene', { gameScene: this });
+  }
+
+  resumeFromUpgrade(): void {
+    this.isPaused = false;
+    this.physics.resume();
   }
 
   private pauseGame(): void {
@@ -217,6 +293,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.scene.stop('HUDScene');
-    this.scene.start('GameOverScene', { score: this.score, wave: this.wave });
+    this.scene.start('GameOverScene', { score: this.score, wave: this.wave, kills: this.killCount });
   }
 }

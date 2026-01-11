@@ -67,6 +67,7 @@ export class HUDScene extends Phaser.Scene {
     wave: number;
     waveProgress: number;
     score: number;
+    kills?: number;
   }): void {
     const { width } = this.cameras.main;
 
@@ -74,8 +75,15 @@ export class HUDScene extends Phaser.Scene {
     this.healthBar.clear();
     this.healthBar.fillStyle(0x331111, 1);
     this.healthBar.fillRoundedRect(20, 40, 200, 20, 4);
-    this.healthBar.fillStyle(0xff4444, 1);
-    const healthWidth = (data.health / data.maxHealth) * 196;
+    
+    // Health color based on percentage
+    const healthPercent = data.health / data.maxHealth;
+    let healthColor = 0xff4444;
+    if (healthPercent < 0.3) healthColor = 0xff2222;
+    else if (healthPercent > 0.7) healthColor = 0x44ff44;
+    
+    this.healthBar.fillStyle(healthColor, 1);
+    const healthWidth = healthPercent * 196;
     this.healthBar.fillRoundedRect(22, 42, Math.max(0, healthWidth), 16, 3);
     this.healthText.setText(`HP: ${Math.floor(data.health)}/${data.maxHealth}`);
 
@@ -96,8 +104,9 @@ export class HUDScene extends Phaser.Scene {
     this.waveTimerBar.fillStyle(0x00d4aa, 1);
     this.waveTimerBar.fillRoundedRect(width - 218, 47, 196 * data.waveProgress, 6, 2);
 
-    // Score
-    this.scoreText.setText(`SCORE: ${data.score}`);
+    // Score with kills
+    const killsDisplay = data.kills !== undefined ? ` | KILLS: ${data.kills}` : '';
+    this.scoreText.setText(`SCORE: ${data.score}${killsDisplay}`);
   }
 
   shutdown(): void {

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Bullet } from './Bullet';
+import { createLevelUpEffect } from './Particle';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   health = 100;
@@ -11,10 +12,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   xp = 0;
   xpToNextLevel = 100;
   level = 1;
+  projectileCount = 1;
+  magnetRange = 100;
   
   private lastAttackTime = 0;
   private invulnerable = false;
   private invulnerabilityTime = 500;
+  pendingLevelUp = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'player');
@@ -67,9 +71,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (nearestEnemy) {
       this.lastAttackTime = time;
-      const angle = Phaser.Math.Angle.Between(this.x, this.y, nearestEnemy.x, nearestEnemy.y);
-      const bullet = new Bullet(this.scene, this.x, this.y, angle);
-      bullets.add(bullet);
+      const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, nearestEnemy.x, nearestEnemy.y);
+      
+      // Multi-shot spread
+      const spreadAngle = 0.15; // radians
+      const count = this.projectileCount;
+      
+      for (let i = 0; i < count; i++) {
+        let angle = baseAngle;
+        if (count > 1) {
+          const offset = (i - (count - 1) / 2) * spreadAngle;
+          angle = baseAngle + offset;
+        }
+        const bullet = new Bullet(this.scene, this.x, this.y, angle);
+        bullets.add(bullet);
+      }
 
       // Muzzle flash effect
       this.scene.cameras.main.shake(30, 0.002);
@@ -111,14 +127,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.level++;
     this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.5);
     
-    // Stat increases
-    this.maxHealth += 10;
-    this.health = Math.min(this.health + 20, this.maxHealth);
-    this.damage += 5;
-    this.attackSpeed = Math.max(200, this.attackSpeed - 20);
-
-    // Level up flash
-    this.scene.cameras.main.flash(300, 170, 51, 255, false);
+    // Visual effect
+    createLevelUpEffect(this.scene, this.x, this.y);
+    
+    // Trigger upgrade selection
+    this.pendingLevelUp = true;
   }
 
   update(time: number, delta: number): void {

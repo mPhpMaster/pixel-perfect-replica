@@ -11,6 +11,7 @@ const ENEMY_CONFIGS = {
     scoreValue: 10,
     xpValue: 10,
     scale: 1,
+    color: 0xff4444,
   },
   fast: {
     texture: 'enemy_fast',
@@ -20,6 +21,7 @@ const ENEMY_CONFIGS = {
     scoreValue: 15,
     xpValue: 15,
     scale: 0.8,
+    color: 0x9933ff,
   },
   tank: {
     texture: 'enemy_tank',
@@ -29,6 +31,7 @@ const ENEMY_CONFIGS = {
     scoreValue: 25,
     xpValue: 25,
     scale: 1.2,
+    color: 0xff8800,
   },
 };
 
@@ -38,6 +41,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   damage: number;
   scoreValue: number;
   xpValue: number;
+  enemyColor: number;
   private player: Phaser.Physics.Arcade.Sprite | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, type: EnemyType = 'normal', wave: number = 1) {
@@ -54,6 +58,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.damage = Math.floor(config.damage * waveMultiplier);
     this.scoreValue = Math.floor(config.scoreValue * waveMultiplier);
     this.xpValue = Math.floor(config.xpValue * waveMultiplier);
+    this.enemyColor = config.color;
 
     this.setScale(config.scale);
     this.setDepth(5);
