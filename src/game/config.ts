@@ -31,7 +31,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
         },
     },
     scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.EXPAND,
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     scene: [BootScene, MainMenuScene, GameScene, HUDScene, PauseScene, GameOverScene, UpgradeScene],

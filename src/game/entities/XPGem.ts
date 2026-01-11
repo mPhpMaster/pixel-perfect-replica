@@ -2,10 +2,11 @@ import Phaser from 'phaser';
 
 export class XPGem extends Phaser.Physics.Arcade.Sprite {
   value: number;
-  magnetDistance = 100;
-  private magnetSpeed = 300;
+  magnetDistance = 150; // Increased range
+  private magnetSpeed = 500; // Faster flow
   private player: Phaser.Physics.Arcade.Sprite | null = null;
   private floatTween: Phaser.Tweens.Tween | null = null;
+  private lastTrailTime = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, value: number) {
     super(scene, x, y, 'xp_gem');
@@ -15,33 +16,51 @@ export class XPGem extends Phaser.Physics.Arcade.Sprite {
 
     this.value = value;
     this.setDepth(3);
-
-    // Spawn animation - pop up
     this.setScale(0);
+
+    // Scatter/Flow out animation on spawn
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const distance = Phaser.Math.FloatBetween(15, 40);
+    const targetX = x + Math.cos(angle) * distance;
+    const targetY = y + Math.sin(angle) * distance;
+
+    // Initial pop and scatter
     scene.tweens.add({
       targets: this,
       scale: 1,
-      y: y - 20,
-      duration: 200,
+      x: targetX,
+      y: targetY,
+      duration: 400,
       ease: 'Back.easeOut',
     });
 
-    // Float animation
+    // Float animation (bobbing)
     this.floatTween = scene.tweens.add({
       targets: this,
-      y: '+=5',
-      duration: 1000,
+      y: '+=8',
+      duration: 1500,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
-      delay: 200,
+      delay: Phaser.Math.Between(200, 600),
+    });
+
+    // Gentle rotation for "flowy" feel
+    scene.tweens.add({
+      targets: this,
+      angle: { from: -10, to: 10 },
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      delay: Phaser.Math.Between(0, 1000),
     });
 
     // Add glow
     this.setBlendMode(Phaser.BlendModes.ADD);
   }
 
-  update(): void {
+  update(time: number, delta: number): void {
     if (!this.player) {
       const gameScene = this.scene as any;
       if (gameScene.player) {
@@ -66,19 +85,44 @@ export class XPGem extends Phaser.Physics.Arcade.Sprite {
         const angle = Phaser.Math.Angle.Between(this.x, this.y, this.player.x, this.player.y);
         const body = this.body as Phaser.Physics.Arcade.Body;
         
-        // Constant speed to ensure it catches up
+        // Accelerate towards player
         const speed = this.magnetSpeed;
         
         body.setVelocity(
           Math.cos(angle) * speed,
           Math.sin(angle) * speed
         );
+
+        // Create flow trail
+        if (time > this.lastTrailTime + 50) {
+            this.createTrail();
+            this.lastTrailTime = time;
+        }
+
       } else {
         // Reset depth and stop moving if out of range
-        this.setDepth(3);
+        if (this.depth === 11) this.setDepth(3);
         const body = this.body as Phaser.Physics.Arcade.Body;
         body.setVelocity(0, 0);
       }
     }
+  }
+
+  private createTrail(): void {
+      const trail = this.scene.add.image(this.x, this.y, 'xp_gem');
+      trail.setTint(0xaa44ff);
+      trail.setAlpha(0.4);
+      trail.setScale(this.scale);
+      trail.setRotation(this.rotation);
+      trail.setBlendMode(Phaser.BlendModes.ADD);
+      trail.setDepth(10);
+
+      this.scene.tweens.add({
+          targets: trail,
+          alpha: 0,
+          scale: 0.1,
+          duration: 300,
+          onComplete: () => trail.destroy()
+      });
   }
 }

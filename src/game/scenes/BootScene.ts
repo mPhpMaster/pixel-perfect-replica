@@ -49,41 +49,108 @@ export class BootScene extends Phaser.Scene {
   }
 
   createPlaceholderAssets(): void {
-    // Player sprite (cyan tater/potato shape)
+    // Player sprite (Improved Tater)
     const playerGraphics = this.make.graphics({ x: 0, y: 0 });
+    
+    // Shadow/Outline (Darker Teal)
+    playerGraphics.fillStyle(0x008866, 1);
+    playerGraphics.fillEllipse(24, 26, 42, 50);
+
+    // Main Body (Cyan)
     playerGraphics.fillStyle(0x00d4aa, 1);
     playerGraphics.fillEllipse(24, 24, 40, 48);
-    playerGraphics.fillStyle(0x00ffcc, 1);
-    playerGraphics.fillCircle(16, 18, 5);
-    playerGraphics.fillCircle(32, 18, 5);
+
+    // Highlight (Top Left)
+    playerGraphics.fillStyle(0x44ffcc, 0.6);
+    playerGraphics.fillEllipse(16, 12, 16, 10);
+
+    // Eyes (White background)
+    playerGraphics.fillStyle(0xffffff, 1);
+    playerGraphics.fillCircle(15, 20, 8);
+    playerGraphics.fillCircle(33, 20, 8);
+
+    // Pupils (Dark)
     playerGraphics.fillStyle(0x0d0d14, 1);
-    playerGraphics.fillCircle(16, 18, 2);
-    playerGraphics.fillCircle(32, 18, 2);
+    playerGraphics.fillCircle(15, 20, 3);
+    playerGraphics.fillCircle(33, 20, 3);
+
+    // Eyebrows (Determination)
+    playerGraphics.lineStyle(3, 0x004433, 1);
+    playerGraphics.beginPath();
+    playerGraphics.moveTo(8, 14);
+    playerGraphics.lineTo(20, 18); // Left brow
+    playerGraphics.moveTo(40, 14);
+    playerGraphics.lineTo(28, 18); // Right brow
+    playerGraphics.strokePath();
+
     playerGraphics.generateTexture('player', 48, 48);
     playerGraphics.destroy();
 
-    // Enemy sprite (red blob)
+    // Normal Enemy (Angry Red Blob)
     const enemyGraphics = this.make.graphics({ x: 0, y: 0 });
+    // Body
     enemyGraphics.fillStyle(0xff4444, 1);
     enemyGraphics.fillCircle(16, 16, 14);
-    enemyGraphics.fillStyle(0xcc0000, 1);
-    enemyGraphics.fillCircle(16, 16, 8);
+    enemyGraphics.lineStyle(2, 0xcc0000, 1);
+    enemyGraphics.strokeCircle(16, 16, 14);
+    
+    // Eyes
+    enemyGraphics.fillStyle(0xffcc00, 1); // Yellow
+    enemyGraphics.fillCircle(11, 13, 4);
+    enemyGraphics.fillCircle(21, 13, 4);
+    
+    // Pupils
+    enemyGraphics.fillStyle(0x000000, 1);
+    enemyGraphics.fillCircle(11, 13, 1.5);
+    enemyGraphics.fillCircle(21, 13, 1.5);
+    
+    // Mouth (frown)
+    enemyGraphics.lineStyle(2, 0x660000, 1);
+    enemyGraphics.beginPath();
+    enemyGraphics.arc(16, 24, 6, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340));
+    enemyGraphics.strokePath();
+    
     enemyGraphics.generateTexture('enemy', 32, 32);
     enemyGraphics.destroy();
 
-    // Fast enemy (purple)
+    // Fast enemy (flaming)
     const fastEnemyGraphics = this.make.graphics({ x: 0, y: 0 });
-    fastEnemyGraphics.fillStyle(0x9933ff, 1);
-    fastEnemyGraphics.fillTriangle(12, 24, 24, 0, 36, 24);
+    // Outer flame (Red-Orange)
+    fastEnemyGraphics.fillStyle(0xff4400, 1);
+    fastEnemyGraphics.fillTriangle(24, 0, 40, 32, 8, 32);
+    // Side flicks
+    fastEnemyGraphics.fillTriangle(16, 10, 8, 20, 20, 24);
+    fastEnemyGraphics.fillTriangle(32, 10, 40, 20, 28, 24);
+    // Inner flame (Yellow)
+    fastEnemyGraphics.fillStyle(0xffcc00, 1);
+    fastEnemyGraphics.fillTriangle(24, 8, 32, 28, 16, 28);
     fastEnemyGraphics.generateTexture('enemy_fast', 48, 32);
     fastEnemyGraphics.destroy();
 
-    // Tank enemy (orange, larger)
+    // Tank Enemy (Heavy Golem)
     const tankEnemyGraphics = this.make.graphics({ x: 0, y: 0 });
-    tankEnemyGraphics.fillStyle(0xff8800, 1);
-    tankEnemyGraphics.fillRect(4, 4, 40, 40);
+    
+    // Main Body (Dark Orange)
     tankEnemyGraphics.fillStyle(0xcc6600, 1);
-    tankEnemyGraphics.fillRect(12, 12, 24, 24);
+    tankEnemyGraphics.fillRoundedRect(4, 4, 40, 40, 8);
+    
+    // Inner Armor (Lighter Orange)
+    tankEnemyGraphics.fillStyle(0xff8800, 1);
+    tankEnemyGraphics.fillRoundedRect(8, 8, 32, 32, 6);
+    
+    // Rivets/Bolts
+    tankEnemyGraphics.fillStyle(0x663300, 1);
+    tankEnemyGraphics.fillCircle(10, 10, 2);
+    tankEnemyGraphics.fillCircle(38, 10, 2);
+    tankEnemyGraphics.fillCircle(10, 38, 2);
+    tankEnemyGraphics.fillCircle(38, 38, 2);
+    
+    // Visor (Cyan glowing strip)
+    tankEnemyGraphics.fillStyle(0x000000, 1);
+    tankEnemyGraphics.fillRect(12, 18, 24, 8);
+    tankEnemyGraphics.fillStyle(0x00ffff, 1);
+    tankEnemyGraphics.fillRect(14, 20, 20, 4);
+    
     tankEnemyGraphics.generateTexture('enemy_tank', 48, 48);
     tankEnemyGraphics.destroy();
 
@@ -93,6 +160,13 @@ export class BootScene extends Phaser.Scene {
     bulletGraphics.fillCircle(6, 6, 6);
     bulletGraphics.generateTexture('bullet', 12, 12);
     bulletGraphics.destroy();
+
+    // Flare (white soft circle for particles)
+    const flareGraphics = this.make.graphics({ x: 0, y: 0 });
+    flareGraphics.fillStyle(0xffffff, 1);
+    flareGraphics.fillCircle(4, 4, 4);
+    flareGraphics.generateTexture('flare', 8, 8);
+    flareGraphics.destroy();
 
     // XP gem (purple diamond)
     const xpGraphics = this.make.graphics({ x: 0, y: 0 });

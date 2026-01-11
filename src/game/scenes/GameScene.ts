@@ -17,11 +17,11 @@ export class GameScene extends Phaser.Scene {
     // Game state
     wave = 1;
     waveTimer = 0;
-    waveDuration = 10000; // 10 seconds per wave
+    waveDuration = 30000; // 30 seconds per wave
     enemiesSpawned = 0;
-    enemiesPerWave = 20;
+    enemiesPerWave = 30;
     spawnTimer = 0;
-    spawnInterval = 1000;
+    spawnInterval = 2000;
     score = 0;
     isPaused = false;
     killCount = 0;
@@ -103,7 +103,6 @@ export class GameScene extends Phaser.Scene {
             this.player.pendingLevelUp = true;
         });
 
-        // this.input.mouse.requestPointerLock();
         // Collisions
         this.physics.add.overlap(this.bullets, this.enemies, this.bulletHitEnemy, undefined, this);
         this.physics.add.overlap(this.player, this.enemies, this.playerHitEnemy, undefined, this);
@@ -279,6 +278,12 @@ export class GameScene extends Phaser.Scene {
             // Spawn XP gem
             const gem = new XPGem(this, enemy.x, enemy.y, enemy.xpValue);
             this.xpGems.add(gem);
+
+            // Chance to spawn health pickup (5%)
+            if (Math.random() < 0.05) {
+                const pickup = new HealthPickup(this, enemy.x, enemy.y);
+                this.healthPickups.add(pickup);
+            }
         }
     }
 
@@ -287,7 +292,7 @@ export class GameScene extends Phaser.Scene {
             this.gameOver();
         }
         createDeathParticles(this, enemy.x, enemy.y, enemy.enemyColor, 6);
-        enemy.destroy();
+        // enemy.destroy();
     }
 
     private collectXP(_player: any, gem: any): void {

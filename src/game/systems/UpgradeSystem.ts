@@ -20,16 +20,16 @@ export const UPGRADES: Upgrade[] = [
       player.damage = Math.floor(player.damage * 1.15);
     },
   },
-  {
-    id: 'damage_up',
-    name: 'POWER UP',
-    description: '+ANY% Damage',
-    icon: '🕸',
-    color: 0xcccccc,
-    apply: (player) => {
-      player.damage = prompt("Enter new player ", player.damage);
-    },
-  },
+  // {
+  //   id: 'damage_up',
+  //   name: 'POWER UP',
+  //   description: '+ANY% Damage',
+  //   icon: '🕸',
+  //   color: 0xcccccc,
+  //   apply: (player) => {
+  //     player.damage = prompt("Enter new player ", player.damage);
+  //   },
+  // },
   {
     id: 'attack_speed',
     name: 'RAPID FIRE',
