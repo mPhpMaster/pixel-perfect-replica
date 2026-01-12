@@ -6,13 +6,14 @@ import {HUDScene} from './scenes/HUDScene';
 import {PauseScene} from './scenes/PauseScene';
 import {GameOverScene} from './scenes/GameOverScene';
 import {UpgradeScene} from './scenes/UpgradeScene';
+import {ShopScene} from './scenes/ShopScene';
 
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
-    title: 'Pixel Perfect Replica',
-    version: '1.1.0',
+    title: 'Project Tater',
+    version: '1.2.0',
     type: Phaser.AUTO,
     fps: {
         target: 60,
@@ -34,6 +35,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
         mode: Phaser.Scale.EXPAND,
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, MainMenuScene, GameScene, HUDScene, PauseScene, GameOverScene, UpgradeScene],
-
+    scene: [BootScene, MainMenuScene, GameScene, HUDScene, PauseScene, GameOverScene, UpgradeScene, ShopScene],
 };
