@@ -6,7 +6,7 @@ export class VirtualJoystick {
   private stick: Phaser.GameObjects.Arc;
   private baseX: number;
   private baseY: number;
-  private radius = 60;
+  private radius = 120;
   private isActive = false;
   private currentPointer: Phaser.Input.Pointer | null = null;
   
@@ -26,7 +26,7 @@ export class VirtualJoystick {
     this.base.setDepth(1000);
     
     // Create joystick stick
-    this.stick = scene.add.circle(x, y, 30, 0x00d4aa, 0.8);
+    this.stick = scene.add.circle(x, y, 60, 0x00d4aa, 0.8);
     this.stick.setScrollFactor(0);
     this.stick.setDepth(1001);
     
