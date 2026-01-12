@@ -1,15 +1,18 @@
 import Phaser from 'phaser';
 import {Player} from '../entities/Player';
 import {Enemy} from '../entities/Enemy';
+import {Boss} from '../entities/Boss';
 import {Bullet} from '../entities/Bullet';
 import {XPGem} from '../entities/XPGem';
 import {HealthPickup} from '../entities/HealthPickup';
 import {createDeathParticles, createDamageNumber, createXPPopup} from '../entities/Particle';
+import {VirtualJoystick} from '../ui/VirtualJoystick';
 import {GAME_WIDTH, GAME_HEIGHT} from '../config';
 
 export class GameScene extends Phaser.Scene {
     player!: Player;
     enemies!: Phaser.GameObjects.Group;
+    bosses!: Phaser.GameObjects.Group;
     bullets!: Phaser.GameObjects.Group;
     xpGems!: Phaser.GameObjects.Group;
     healthPickups!: Phaser.GameObjects.Group;
@@ -25,6 +28,7 @@ export class GameScene extends Phaser.Scene {
     score = 0;
     isPaused = false;
     killCount = 0;
+    bossActive = false;
 
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasdKeys!: {
@@ -34,6 +38,8 @@ export class GameScene extends Phaser.Scene {
         D: Phaser.Input.Keyboard.Key
     };
     private targetPosition: Phaser.Math.Vector2 | null = null;
+    private virtualJoystick: VirtualJoystick | null = null;
+    private isMobile = false;
 
     constructor() {
         super({key: 'GameScene'});
@@ -48,7 +54,11 @@ export class GameScene extends Phaser.Scene {
         this.score = 0;
         this.isPaused = false;
         this.killCount = 0;
+        this.bossActive = false;
         this.targetPosition = null;
+
+        // Detect mobile
+        this.isMobile = this.sys.game.device.input.touch;
 
         // Create game world bounds (larger than camera)
         const worldWidth = GAME_WIDTH * 2;
@@ -60,6 +70,7 @@ export class GameScene extends Phaser.Scene {
 
         // Initialize groups
         this.enemies = this.add.group({classType: Enemy, runChildUpdate: true});
+        this.bosses = this.add.group({classType: Boss, runChildUpdate: true});
         this.bullets = this.add.group({classType: Bullet, runChildUpdate: true});
         this.xpGems = this.add.group({classType: XPGem, runChildUpdate: true});
         this.healthPickups = this.add.group({classType: HealthPickup, runChildUpdate: true});
@@ -80,6 +91,11 @@ export class GameScene extends Phaser.Scene {
             D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
         };
 
+        // Virtual joystick for mobile
+        if (this.isMobile) {
+            this.virtualJoystick = new VirtualJoystick(this, 120, GAME_HEIGHT - 140);
+        }
+
         // ESC for pause
         this.input.keyboard!.on('keydown-ESC', () => {
             this.pauseGame();
@@ -89,23 +105,22 @@ export class GameScene extends Phaser.Scene {
             this.pauseGame();
         });
 
-
         this.input.keyboard!.on('keydown-NUMPAD_SUBTRACT', () => {
             this.previousWave();
         });
         this.input.keyboard!.on('keydown-NUMPAD_ADD', (event) => {
-            if (!event.shiftKey)
-            {
+            if (!event.shiftKey) {
                 this.nextWave();
                 return;
             }
-
             this.player.pendingLevelUp = true;
         });
 
         // Collisions
         this.physics.add.overlap(this.bullets, this.enemies, this.bulletHitEnemy, undefined, this);
+        this.physics.add.overlap(this.bullets, this.bosses, this.bulletHitBoss, undefined, this);
         this.physics.add.overlap(this.player, this.enemies, this.playerHitEnemy, undefined, this);
+        this.physics.add.overlap(this.player, this.bosses, this.playerHitBoss, undefined, this);
         this.physics.add.overlap(this.player, this.xpGems, this.collectXP, undefined, this);
         this.physics.add.overlap(this.player, this.healthPickups, this.collectHealth, undefined, this);
 
@@ -152,11 +167,16 @@ export class GameScene extends Phaser.Scene {
         let moveY = (this.cursors.down.isDown || this.wasdKeys.S.isDown ? 1 : 0) -
             (this.cursors.up.isDown || this.wasdKeys.W.isDown ? 1 : 0);
 
-        if (moveX !== 0 || moveY !== 0) {
+        // Virtual joystick input (mobile)
+        if (this.virtualJoystick && (this.virtualJoystick.forceX !== 0 || this.virtualJoystick.forceY !== 0)) {
+            moveX = this.virtualJoystick.forceX;
+            moveY = this.virtualJoystick.forceY;
+            this.targetPosition = null;
+        } else if (moveX !== 0 || moveY !== 0) {
             // Keyboard input overrides mouse target
             this.targetPosition = null;
-        } else {
-            // Mouse/Touch input
+        } else if (!this.isMobile) {
+            // Mouse input (desktop only)
             const pointer = this.input.activePointer;
             if (pointer.isDown) {
                 this.targetPosition = new Phaser.Math.Vector2(
@@ -174,7 +194,6 @@ export class GameScene extends Phaser.Scene {
                     moveX = dx;
                     moveY = dy;
                 } else {
-                    // Reached target
                     this.targetPosition = null;
                     moveX = 0;
                     moveY = 0;
@@ -184,6 +203,17 @@ export class GameScene extends Phaser.Scene {
 
         this.player.move(moveX, moveY);
         this.player.update(time, delta);
+
+        // Update bosses
+        this.bosses.getChildren().forEach((bossObj) => {
+            const boss = bossObj as Boss;
+            boss.update(time, delta);
+        });
+
+        // Check if boss wave is complete
+        if (this.bossActive && this.bosses.getLength() === 0) {
+            this.bossActive = false;
+        }
 
         // Auto-attack nearest enemy
         this.player.autoAttack(this.enemies, this.bullets, time);
@@ -271,6 +301,77 @@ export class GameScene extends Phaser.Scene {
         if (this.wave % 2 === 0) {
             const pickup = new HealthPickup(this, this.player.x + Phaser.Math.Between(-100, 100), this.player.y + Phaser.Math.Between(-100, 100));
             this.healthPickups.add(pickup);
+        }
+
+        // Boss wave every 5 waves
+        if (this.wave % 5 === 0) {
+            this.spawnBoss();
+        }
+    }
+
+    private spawnBoss(): void {
+        const bossTypes: Array<'demon' | 'golem' | 'specter'> = ['demon', 'golem', 'specter'];
+        const bossType = bossTypes[Math.floor((this.wave / 5 - 1) % 3)];
+        
+        const spawnDistance = 500;
+        const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        const x = this.player.x + Math.cos(angle) * spawnDistance;
+        const y = this.player.y + Math.sin(angle) * spawnDistance;
+        
+        const boss = new Boss(this, x, y, bossType, this.wave);
+        this.bosses.add(boss);
+        this.bossActive = true;
+
+        // Warning text
+        const warningText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 100, `⚠️ ${boss.bossName} APPROACHES! ⚠️`, {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '16px',
+            color: '#ff4444',
+            stroke: '#000000',
+            strokeThickness: 4,
+        });
+        warningText.setOrigin(0.5);
+        warningText.setScrollFactor(0);
+        warningText.setDepth(200);
+
+        this.tweens.add({
+            targets: warningText,
+            alpha: 0,
+            y: GAME_HEIGHT / 2 - 150,
+            duration: 2000,
+            onComplete: () => warningText.destroy(),
+        });
+    }
+
+    private bulletHitBoss(bullet: any, boss: any): void {
+        bullet.destroy();
+        createDamageNumber(this, boss.x, boss.y - 40, this.player.damage);
+
+        const killed = boss.takeDamage(this.player.damage);
+        if (killed) {
+            this.score += boss.scoreValue;
+            this.killCount++;
+
+            // Death particles
+            createDeathParticles(this, boss.x, boss.y, boss.bossColor, 20);
+
+            // Spawn multiple XP gems
+            for (let i = 0; i < 5; i++) {
+                const offsetX = Phaser.Math.Between(-50, 50);
+                const offsetY = Phaser.Math.Between(-50, 50);
+                const gem = new XPGem(this, boss.x + offsetX, boss.y + offsetY, Math.floor(boss.xpValue / 5));
+                this.xpGems.add(gem);
+            }
+
+            // Guaranteed health pickup
+            const pickup = new HealthPickup(this, boss.x, boss.y);
+            this.healthPickups.add(pickup);
+        }
+    }
+
+    private playerHitBoss(_player: any, boss: any): void {
+        if (this.player.takeDamage(boss.damage)) {
+            this.gameOver();
         }
     }
 

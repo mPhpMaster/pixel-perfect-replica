@@ -9,7 +9,9 @@ export class HUDScene extends Phaser.Scene {
     private waveText!: Phaser.GameObjects.Text;
     private waveTimerBar!: Phaser.GameObjects.Graphics;
     private scoreText!: Phaser.GameObjects.Text;
+    private bossIndicator!: Phaser.GameObjects.Text;
     private gameScene!: GameScene;
+    private isMobile = false;
 
     constructor() {
         super({key: 'HUDScene'});
@@ -17,10 +19,11 @@ export class HUDScene extends Phaser.Scene {
 
     init(data: { gameScene: GameScene }): void {
         this.gameScene = data.gameScene;
+        this.isMobile = this.sys.game.device.input.touch;
     }
 
     create(): void {
-        const {width} = this.cameras.main;
+        const {width, height} = this.cameras.main;
 
         // Health bar (top-left)
         this.healthBar = this.add.graphics();
@@ -54,15 +57,39 @@ export class HUDScene extends Phaser.Scene {
             color: '#ffaa00',
         }).setOrigin(0.5, 0);
 
-        // Pause button
-        this.createButton(width - 33, 30, '||', () => {
+        // Pause button (larger for mobile)
+        const buttonSize = this.isMobile ? 80 : 60;
+        this.createButton(width - 45, 35, '||', () => {
             this.gameScene.pauseGame();
-        });
+        }, buttonSize);
+
+        // Boss wave indicator
+        this.bossIndicator = this.add.text(width / 2, 55, '', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '10px',
+            color: '#ff4444',
+        }).setOrigin(0.5, 0);
+        this.bossIndicator.setVisible(false);
+
+        // Mobile controls hint
+        if (this.isMobile) {
+            const hint = this.add.text(20, height - 50, '← JOYSTICK', {
+                fontFamily: '"Press Start 2P"',
+                fontSize: '8px',
+                color: '#00d4aa',
+            });
+            hint.setAlpha(0.5);
+            this.tweens.add({
+                targets: hint,
+                alpha: 0,
+                delay: 3000,
+                duration: 1000,
+            });
+        }
 
         // Listen for updates
         this.gameScene.events.on('updateHUD', this.updateHUD, this);
     }
-
     private updateHUD(data: {
         health: number;
         maxHealth: number;
@@ -73,6 +100,7 @@ export class HUDScene extends Phaser.Scene {
         waveProgress: number;
         score: number;
         kills?: number;
+        bossActive?: boolean;
     }): void {
         const {width, height} = this.cameras.main;
 
@@ -112,15 +140,23 @@ export class HUDScene extends Phaser.Scene {
         // Score with kills
         const killsDisplay = data.kills !== undefined ? ` | KILLS: ${data.kills}` : '';
         this.scoreText.setText(`SCORE: ${data.score}${killsDisplay}`);
+
+        // Boss indicator
+        if (data.bossActive) {
+            this.bossIndicator.setText('⚔️ BOSS WAVE ⚔️');
+            this.bossIndicator.setVisible(true);
+        } else {
+            this.bossIndicator.setVisible(false);
+        }
     }
 
     shutdown(): void {
         this.gameScene.events.off('updateHUD', this.updateHUD, this);
     }
 
-    private createButton(x: number, y: number, text: string, callback: () => void): Phaser.GameObjects.Container {
-        const width = 60;
-        const height = 42;
+    private createButton(x: number, y: number, text: string, callback: () => void, size: number = 60): Phaser.GameObjects.Container {
+        const width = size;
+        const height = size * 0.7;
         const radius = 11;
 
         const buttonBg = this.add.graphics();
