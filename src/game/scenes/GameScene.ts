@@ -53,9 +53,11 @@ export class GameScene extends Phaser.Scene {
         S: Phaser.Input.Keyboard.Key;
         D: Phaser.Input.Keyboard.Key
     };
+    private dashKey!: Phaser.Input.Keyboard.Key;
     private targetPosition: Phaser.Math.Vector2 | null = null;
     private virtualJoystick: VirtualJoystick | null = null;
     private isMobile = false;
+    private lastTapTime = 0;
 
     constructor() {
         super({key: 'GameScene'});
@@ -114,8 +116,6 @@ export class GameScene extends Phaser.Scene {
         // Camera follows player
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
-        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-        this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
         // Input setup
         this.cursors = this.input.keyboard!.createCursorKeys();
@@ -125,11 +125,25 @@ export class GameScene extends Phaser.Scene {
             S: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
             D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
         };
+        this.dashKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // Virtual joystick for mobile
         if (this.isMobile) {
             this.virtualJoystick = new VirtualJoystick(this, 120, GAME_HEIGHT - 140);
         }
+
+        // Double tap to dash
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            const now = this.time.now;
+            if (now - this.lastTapTime < 300) {
+                // Double tap detected
+                const dx = pointer.worldX - this.player.x;
+                const dy = pointer.worldY - this.player.y;
+                const vec = new Phaser.Math.Vector2(dx, dy).normalize();
+                this.player.attemptDash(vec.x, vec.y);
+            }
+            this.lastTapTime = now;
+        });
 
         // ESC for pause
         this.input.keyboard!.on('keydown-ESC', () => {
@@ -234,6 +248,11 @@ export class GameScene extends Phaser.Scene {
                     moveY = 0;
                 }
             }
+        }
+
+        // Dash input (Keyboard)
+        if (Phaser.Input.Keyboard.JustDown(this.dashKey)) {
+            this.player.attemptDash(moveX, moveY);
         }
 
         this.player.move(moveX, moveY);
@@ -420,21 +439,7 @@ export class GameScene extends Phaser.Scene {
 
         const killed = enemy.takeDamage(this.player.damage);
         if (killed) {
-            this.score += enemy.scoreValue;
-            this.killCount++;
-
-            // Death particles
-            createDeathParticles(this, enemy.x, enemy.y, enemy.enemyColor, 10);
-
-            // Spawn XP gem
-            const gem = new XPGem(this, enemy.x, enemy.y, enemy.xpValue);
-            this.xpGems.add(gem);
-
-            // Chance to spawn health pickup (5%)
-            if (Math.random() < 0.05) {
-                const pickup = new HealthPickup(this, enemy.x, enemy.y);
-                this.healthPickups.add(pickup);
-            }
+            this.handleEnemyKill(enemy);
         }
     }
 
@@ -588,5 +593,11 @@ export class GameScene extends Phaser.Scene {
         const xpValue = Math.floor(enemy.xpValue * this.xpMultiplier);
         const gem = new XPGem(this, enemy.x, enemy.y, xpValue);
         this.xpGems.add(gem);
+        
+        // Chance to spawn health pickup (5%)
+        if (Math.random() < 0.05) {
+            const pickup = new HealthPickup(this, enemy.x, enemy.y);
+            this.healthPickups.add(pickup);
+        }
     }
 }

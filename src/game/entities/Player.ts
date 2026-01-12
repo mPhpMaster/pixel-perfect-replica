@@ -15,6 +15,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   projectileCount = 1;
   magnetRange = 100;
   
+  // Dash stats
+  dashSpeedMultiplier = 3;
+  dashDuration = 200;
+  dashCooldown = 1000;
+  lastDashTime = 0;
+  isDashing = false;
+  private dashDirection = new Phaser.Math.Vector2(0, 0);
+
   private lastAttackTime = 0;
   private invulnerable = false;
   private invulnerabilityTime = 500;
@@ -37,6 +45,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   move(dirX: number, dirY: number): void {
       const body = this.body as Phaser.Physics.Arcade.Body;
 
+      if (this.isDashing) {
+          body.setVelocity(
+              this.dashDirection.x * this.speed * this.dashSpeedMultiplier,
+              this.dashDirection.y * this.speed * this.dashSpeedMultiplier
+          );
+          this.createDashTrail();
+          return;
+      }
+
       if (dirX === 0 && dirY === 0) {
           body.setVelocity(0, 0);
           return;
@@ -49,6 +66,56 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       // Flip sprite based on direction
       if (dirX < 0) this.setFlipX(true);
       else if (dirX > 0) this.setFlipX(false);
+  }
+
+  attemptDash(dirX: number, dirY: number): boolean {
+      const time = this.scene.time.now;
+      if (time - this.lastDashTime < this.dashCooldown || this.isDashing) return false;
+
+      // Determine dash direction
+      if (dirX === 0 && dirY === 0) {
+          // If not moving, dash in facing direction
+          dirX = this.flipX ? -1 : 1;
+          dirY = 0;
+      }
+
+      this.isDashing = true;
+      this.lastDashTime = time;
+      this.dashDirection.set(dirX, dirY).normalize();
+      
+      // Invulnerable during dash
+      this.invulnerable = true;
+
+      // Dash sound or effect could go here
+
+      this.scene.time.delayedCall(this.dashDuration, () => {
+          this.isDashing = false;
+          this.invulnerable = false;
+          // Friction/slowdown after dash
+          const body = this.body as Phaser.Physics.Arcade.Body;
+          body.velocity.scale(0.5);
+      });
+
+      return true;
+  }
+
+  private createDashTrail(): void {
+      // Create a ghost trail
+      if (this.scene.time.now % 50 < 20) { // Limit frequency
+          const trail = this.scene.add.image(this.x, this.y, 'player');
+          trail.setTint(0x00ffff);
+          trail.setAlpha(0.5);
+          trail.setFlipX(this.flipX);
+          trail.setScale(this.scale);
+          trail.setDepth(9);
+          
+          this.scene.tweens.add({
+              targets: trail,
+              alpha: 0,
+              duration: 300,
+              onComplete: () => trail.destroy()
+          });
+      }
   }
 
   autoAttack(enemies: Phaser.GameObjects.Group, bullets: Phaser.GameObjects.Group, time: number): void {
@@ -105,7 +172,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.cameras.main.shake(200, 0.01);
 
     this.scene.time.delayedCall(this.invulnerabilityTime, () => {
-      this.invulnerable = false;
+      // Only reset if not dashing (dash handles its own invulnerability reset)
+      if (!this.isDashing) {
+          this.invulnerable = false;
+      }
     });
 
     return this.health <= 0;
