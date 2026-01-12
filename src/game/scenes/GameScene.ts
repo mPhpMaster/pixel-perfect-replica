@@ -130,20 +130,20 @@ export class GameScene extends Phaser.Scene {
         // Virtual joystick for mobile
         if (this.isMobile) {
             this.virtualJoystick = new VirtualJoystick(this, 120, GAME_HEIGHT - 140);
+            
+            // Double tap to dash (Mobile only)
+            this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                const now = this.time.now;
+                if (now - this.lastTapTime < 300) {
+                    // Double tap detected
+                    const dx = pointer.worldX - this.player.x;
+                    const dy = pointer.worldY - this.player.y;
+                    const vec = new Phaser.Math.Vector2(dx, dy).normalize();
+                    this.player.attemptDash(vec.x, vec.y);
+                }
+                this.lastTapTime = now;
+            });
         }
-
-        // Double tap to dash
-        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-            const now = this.time.now;
-            if (now - this.lastTapTime < 300) {
-                // Double tap detected
-                const dx = pointer.worldX - this.player.x;
-                const dy = pointer.worldY - this.player.y;
-                const vec = new Phaser.Math.Vector2(dx, dy).normalize();
-                this.player.attemptDash(vec.x, vec.y);
-            }
-            this.lastTapTime = now;
-        });
 
         // ESC for pause
         this.input.keyboard!.on('keydown-ESC', () => {
