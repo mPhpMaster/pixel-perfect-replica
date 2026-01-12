@@ -158,7 +158,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     takeDamage(amount: number): boolean {
-        if (this.invulnerable) return false;
+        if (this.invulnerable && !this.isInvulnerable) return false;
 
         if (!this.isInvulnerable) {
             this.health -= amount;
