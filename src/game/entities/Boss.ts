@@ -136,6 +136,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     }
 
     update(time: number, delta: number): void {
+        if (this.scene.game.isPaused) return;
+
         if (!this.player) {
             const gameScene = this.scene as any;
             if (gameScene.player) {
@@ -240,46 +242,144 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     }
 
     private slamAttack(): void {
-        // Jump up
+        // 1. Charge Up / Jump
+        this.createDustPuff(this.x, this.y + 30);
+        
         this.scene.tweens.add({
             targets: this,
-            y: this.y - 100,
-            scaleX: 2.8,
-            scaleY: 2.2,
-            duration: 400,
-            ease: 'Power2',
+            y: this.y - 150,
+            scaleX: 2.5, // Stretch
+            scaleY: 1.8, // Squash
+            duration: 500,
+            ease: 'Back.easeOut',
             onComplete: () => {
                 if (!this.player) return;
 
-                // Slam down at player position
+                const targetX = this.player.x;
+                const targetY = this.player.y;
+
+                // 2. Slam Down
+                // Create trail effect during movement
+                const trailTimer = this.scene.time.addEvent({
+                    delay: 20,
+                    repeat: 10,
+                    callback: () => this.createGhostTrail()
+                });
+
+                // Speed lines
+                this.createSpeedLines(this.x, this.y, targetX, targetY);
+
                 this.scene.tweens.add({
                     targets: this,
-                    x: this.player.x,
-                    y: this.player.y,
-                    scaleX: 2.5,
-                    scaleY: 2.5,
-                    duration: 300,
+                    x: targetX,
+                    y: targetY,
+                    scaleX: 2.0, // Normal
+                    scaleY: 2.0,
+                    duration: 250,
                     ease: 'Power4.easeIn',
                     onComplete: () => {
-                        // Shockwave effect
-                        this.scene.cameras.main.shake(300, 0.03);
-
-                        // Create shockwave particles
-                        for (let i = 0; i < 8; i++) {
-                            const angle = (i / 8) * Math.PI * 2;
-                            this.scene.tweens.add({
-                                targets: {x: this.x, y: this.y},
-                                x: this.x + Math.cos(angle) * 200,
-                                y: this.y + Math.sin(angle) * 200,
-                                duration: 300,
-                            });
-                        }
-
+                        trailTimer.remove();
+                        
+                        // 3. Impact
+                        this.scene.cameras.main.shake(400, 0.04);
+                        this.createImpactEffect(this.x, this.y);
+                        
                         this.isAttacking = false;
                     },
                 });
             },
         });
+    }
+
+    private createDustPuff(x: number, y: number): void {
+        for(let i=0; i<8; i++) {
+            const dust = this.scene.add.circle(x, y, Phaser.Math.Between(5, 10), 0x888888, 0.6);
+            dust.setDepth(7);
+            this.scene.tweens.add({
+                targets: dust,
+                alpha: 0,
+                scale: 2,
+                x: x + Phaser.Math.Between(-30, 30),
+                y: y + Phaser.Math.Between(-10, 10),
+                duration: 600,
+                onComplete: () => dust.destroy()
+            });
+        }
+    }
+
+    private createGhostTrail(): void {
+        const trail = this.scene.add.image(this.x, this.y, 'enemy_boss');
+        trail.setTint(this.bossColor);
+        trail.setAlpha(0.4);
+        trail.setScale(this.scaleX, this.scaleY);
+        trail.setDepth(7);
+        
+        this.scene.tweens.add({
+            targets: trail,
+            alpha: 0,
+            scaleX: this.scaleX * 1.2,
+            scaleY: this.scaleY * 0.8,
+            duration: 300,
+            onComplete: () => trail.destroy()
+        });
+    }
+
+    private createSpeedLines(startX: number, startY: number, endX: number, endY: number): void {
+        const graphics = this.scene.add.graphics();
+        graphics.setDepth(7);
+        graphics.lineStyle(4, 0xffffff, 0.6);
+
+        const angle = Phaser.Math.Angle.Between(startX, startY, endX, endY);
+        const perpAngle = angle + Math.PI / 2;
+
+        for (let i = 0; i < 5; i++) {
+            const offset = Phaser.Math.Between(-40, 40);
+            const offsetX = Math.cos(perpAngle) * offset;
+            const offsetY = Math.sin(perpAngle) * offset;
+
+            graphics.beginPath();
+            graphics.moveTo(startX + offsetX, startY + offsetY);
+            graphics.lineTo(endX + offsetX, endY + offsetY);
+            graphics.strokePath();
+        }
+
+        this.scene.tweens.add({
+            targets: graphics,
+            alpha: 0,
+            duration: 200,
+            onComplete: () => graphics.destroy()
+        });
+    }
+
+    private createImpactEffect(x: number, y: number): void {
+        // Expanding ring
+        const ring = this.scene.add.circle(x, y, 10, this.bossColor, 0.5);
+        ring.setDepth(7);
+        this.scene.tweens.add({
+            targets: ring,
+            scale: 10,
+            alpha: 0,
+            duration: 400,
+            onComplete: () => ring.destroy()
+        });
+
+        // Debris
+        for (let i = 0; i < 12; i++) {
+            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            const debris = this.scene.add.rectangle(x, y, 8, 8, 0x664422);
+            debris.setDepth(7);
+            
+            this.scene.tweens.add({
+                targets: debris,
+                x: x + Math.cos(angle) * 150,
+                y: y + Math.sin(angle) * 150,
+                angle: 360,
+                alpha: 0,
+                duration: 600,
+                ease: 'Power2.easeOut',
+                onComplete: () => debris.destroy()
+            });
+        }
     }
 
     private teleportAttack(): void {

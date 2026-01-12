@@ -217,7 +217,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    setInvulnerable(value: boolean = true): void {
-        this.isInvulnerable = value;
+    setInvulnerable(value: boolean): void {
+        this.invulnerable = this.isInvulnerable = value;
     }
 }

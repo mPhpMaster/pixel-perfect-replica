@@ -302,6 +302,8 @@ export class GameScene extends Phaser.Scene {
 
         // Update bosses
         this.bosses.getChildren().forEach((bossObj) => {
+            if (this.isPaused) return;
+
             const boss = bossObj as Boss;
             boss.update(time, delta);
         });
