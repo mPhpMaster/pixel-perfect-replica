@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { loadMeta } from '../systems/MetaProgression';
 
 export class MainMenuScene extends Phaser.Scene {
   private audioUnlocked = false;
@@ -94,14 +95,20 @@ export class MainMenuScene extends Phaser.Scene {
 
   private showMenu(): void {
     const { width, height } = this.cameras.main;
+    const meta = loadMeta();
 
     // Play button
-    const playButton = this.createButton(width / 2, height * 0.55, 'PLAY', () => {
+    this.createButton(width / 2, height * 0.50, 'PLAY', () => {
       this.scene.start('GameScene');
     });
 
+    // Shop button
+    this.createButton(width / 2, height * 0.62, 'UPGRADE SHOP', () => {
+      this.scene.start('ShopScene');
+    });
+
     // Fullscreen button
-    const fullscreenButton = this.createButton(width / 2, height * 0.68, 'FULLSCREEN', () => {
+    this.createButton(width / 2, height * 0.74, 'FULLSCREEN', () => {
       if (this.scale.isFullscreen) {
         this.scale.stopFullscreen();
       } else {
@@ -109,19 +116,27 @@ export class MainMenuScene extends Phaser.Scene {
       }
     });
 
-    // High score display
-    const highScore = localStorage.getItem('tater_highscore') || '0';
-    const highScoreText = this.add.text(width / 2, height * 0.85, `HIGH SCORE: ${highScore}`, {
+    // Coin display
+    const coinText = this.add.text(width / 2, height * 0.84, `💰 ${meta.coins} COINS`, {
       fontFamily: '"Press Start 2P"',
       fontSize: '12px',
+      color: '#ffdd00',
+    });
+    coinText.setOrigin(0.5);
+
+    // High score display
+    const highScore = localStorage.getItem('tater_highscore') || '0';
+    const highScoreText = this.add.text(width / 2, height * 0.89, `HIGH SCORE: ${highScore}`, {
+      fontFamily: '"Press Start 2P"',
+      fontSize: '10px',
       color: '#ffaa00',
     });
     highScoreText.setOrigin(0.5);
 
     // Controls hint
-    const controlsText = this.add.text(width / 2, height * 0.92, 'WASD or ARROWS to move', {
+    const controlsText = this.add.text(width / 2, height * 0.95, 'WASD or ARROWS to move', {
       fontFamily: 'Inter',
-      fontSize: '14px',
+      fontSize: '12px',
       color: '#666688',
     });
     controlsText.setOrigin(0.5);

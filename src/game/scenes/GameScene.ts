@@ -5,9 +5,13 @@ import {Boss} from '../entities/Boss';
 import {Bullet} from '../entities/Bullet';
 import {XPGem} from '../entities/XPGem';
 import {HealthPickup} from '../entities/HealthPickup';
+import {OrbitShield} from '../entities/OrbitShield';
+import {LightningStrike} from '../entities/LightningStrike';
+import {ExplosiveAura} from '../entities/ExplosiveAura';
 import {createDeathParticles, createDamageNumber, createXPPopup} from '../entities/Particle';
 import {VirtualJoystick} from '../ui/VirtualJoystick';
 import {GAME_WIDTH, GAME_HEIGHT} from '../config';
+import {loadMeta, applyMetaBonuses, getXPMultiplier, PlayerMeta} from '../systems/MetaProgression';
 
 export class GameScene extends Phaser.Scene {
     player!: Player;
@@ -16,6 +20,18 @@ export class GameScene extends Phaser.Scene {
     bullets!: Phaser.GameObjects.Group;
     xpGems!: Phaser.GameObjects.Group;
     healthPickups!: Phaser.GameObjects.Group;
+
+    // Weapons
+    private orbitShield: OrbitShield | null = null;
+    private lightning: LightningStrike | null = null;
+    private explosiveAura: ExplosiveAura | null = null;
+    private lightningTimer = 0;
+    private lightningCooldown = 2000;
+
+    // Meta progression
+    private meta!: PlayerMeta;
+    private xpMultiplier = 1;
+    private coinsEarned = 0;
 
     // Game state
     wave = 1;
@@ -46,6 +62,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     create(): void {
+        // Load meta progression
+        this.meta = loadMeta();
+        this.xpMultiplier = getXPMultiplier(this.meta);
+        this.coinsEarned = 0;
+
         // Reset game state
         this.wave = 1;
         this.waveTimer = 0;
@@ -56,6 +77,12 @@ export class GameScene extends Phaser.Scene {
         this.killCount = 0;
         this.bossActive = false;
         this.targetPosition = null;
+        this.lightningTimer = 0;
+
+        // Reset weapons
+        this.orbitShield = null;
+        this.lightning = null;
+        this.explosiveAura = null;
 
         // Detect mobile
         this.isMobile = this.sys.game.device.input.touch;
@@ -77,8 +104,16 @@ export class GameScene extends Phaser.Scene {
 
         // Create player at center
         this.player = new Player(this, worldWidth / 2, worldHeight / 2);
+        
+        // Apply meta bonuses to player
+        applyMetaBonuses(this.player, this.meta);
+
+        // Initialize unlocked weapons
+        this.initializeWeapons();
 
         // Camera follows player
+        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+        this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
@@ -203,6 +238,9 @@ export class GameScene extends Phaser.Scene {
 
         this.player.move(moveX, moveY);
         this.player.update(time, delta);
+
+        // Update weapons
+        this.updateWeapons(time, delta);
 
         // Update bosses
         this.bosses.getChildren().forEach((bossObj) => {
@@ -470,7 +508,85 @@ export class GameScene extends Phaser.Scene {
             localStorage.setItem('tater_highscore', this.score.toString());
         }
 
+        // Cleanup weapons
+        if (this.orbitShield) this.orbitShield.destroy();
+        if (this.explosiveAura) this.explosiveAura.destroy();
+
         this.scene.stop('HUDScene');
-        this.scene.start('GameOverScene', {score: this.score, wave: this.wave, kills: this.killCount});
+        this.scene.start('GameOverScene', {
+            score: this.score, 
+            wave: this.wave, 
+            kills: this.killCount,
+            coinsEarned: this.coinsEarned
+        });
+    }
+
+    private initializeWeapons(): void {
+        // Initialize unlocked weapons from meta progression
+        if (this.meta.unlockedWeapons.includes('orbit_shield')) {
+            this.orbitShield = new OrbitShield(this, this.player);
+            this.orbitShield.addShield();
+        }
+        
+        if (this.meta.unlockedWeapons.includes('lightning')) {
+            this.lightning = new LightningStrike(this, 30, 3, 150);
+        }
+        
+        if (this.meta.unlockedWeapons.includes('explosive_aura')) {
+            this.explosiveAura = new ExplosiveAura(this, this.player);
+            this.explosiveAura.activate();
+        }
+    }
+
+    private updateWeapons(time: number, delta: number): void {
+        // Update orbit shield
+        if (this.orbitShield) {
+            this.orbitShield.update(time, delta);
+            
+            // Check collisions with enemies
+            const shieldPositions = this.orbitShield.getShieldPositions();
+            shieldPositions.forEach(pos => {
+                this.enemies.getChildren().forEach((enemyObj: any) => {
+                    if (!enemyObj.active) return;
+                    const distance = Phaser.Math.Distance.Between(pos.x, pos.y, enemyObj.x, enemyObj.y);
+                    if (distance < 30) {
+                        createDamageNumber(this, enemyObj.x, enemyObj.y - 20, this.orbitShield!.getDamage());
+                        const killed = enemyObj.takeDamage(this.orbitShield!.getDamage());
+                        if (killed) {
+                            this.handleEnemyKill(enemyObj);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Update lightning
+        if (this.lightning) {
+            this.lightningTimer += delta;
+            if (this.lightningTimer >= this.lightningCooldown && this.enemies.getLength() > 0) {
+                this.lightningTimer = 0;
+                this.lightning.strike(this.player.x, this.player.y, this.enemies);
+            }
+        }
+
+        // Update explosive aura
+        if (this.explosiveAura) {
+            const auraKills = this.explosiveAura.update(time, this.enemies);
+            this.killCount += auraKills;
+        }
+    }
+
+    private handleEnemyKill(enemy: any): void {
+        this.score += enemy.scoreValue;
+        this.killCount++;
+        this.coinsEarned += Math.floor(enemy.scoreValue / 10);
+
+        // Death particles
+        createDeathParticles(this, enemy.x, enemy.y, enemy.enemyColor, 10);
+
+        // Spawn XP gem with multiplier
+        const xpValue = Math.floor(enemy.xpValue * this.xpMultiplier);
+        const gem = new XPGem(this, enemy.x, enemy.y, xpValue);
+        this.xpGems.add(gem);
     }
 }

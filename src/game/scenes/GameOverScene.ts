@@ -1,18 +1,25 @@
 import Phaser from 'phaser';
+import { loadMeta, recordRun } from '../systems/MetaProgression';
 
 export class GameOverScene extends Phaser.Scene {
   private score = 0;
   private wave = 1;
   private kills = 0;
+  private coinsEarned = 0;
 
   constructor() {
     super({ key: 'GameOverScene' });
   }
 
-  init(data: { score: number; wave: number; kills?: number }): void {
+  init(data: { score: number; wave: number; kills?: number; coinsEarned?: number }): void {
     this.score = data.score;
     this.wave = data.wave;
     this.kills = data.kills || 0;
+    this.coinsEarned = data.coinsEarned || 0;
+    
+    // Record the run in meta progression
+    const meta = loadMeta();
+    recordRun(meta, this.wave, this.kills, this.coinsEarned);
   }
 
   create(): void {
@@ -60,10 +67,18 @@ export class GameOverScene extends Phaser.Scene {
     });
     killsText.setOrigin(0.5);
 
+    // Coins earned
+    const coinsText = this.add.text(width / 2, statsY + 120, `COINS EARNED: +${this.coinsEarned} 💰`, {
+      fontFamily: '"Press Start 2P"',
+      fontSize: '12px',
+      color: '#ffdd00',
+    });
+    coinsText.setOrigin(0.5);
+
     // High score check
     const highScore = parseInt(localStorage.getItem('tater_highscore') || '0', 10);
     if (this.score >= highScore && this.score > 0) {
-      const newHighText = this.add.text(width / 2, statsY + 130, '★ NEW HIGH SCORE! ★', {
+      const newHighText = this.add.text(width / 2, statsY + 155, '★ NEW HIGH SCORE! ★', {
         fontFamily: '"Press Start 2P"',
         fontSize: '14px',
         color: '#44ff44',
