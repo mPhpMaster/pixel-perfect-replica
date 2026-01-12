@@ -93,7 +93,7 @@ export function createLevelUpEffect(scene: Phaser.Scene, x: number, y: number): 
     targets: ring,
     radius: 100,
     alpha: 0,
-    duration: 5000,
+    duration: 2000,
     ease: 'Power2',
     onComplete: () => ring.destroy(),
   });

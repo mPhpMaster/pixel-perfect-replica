@@ -86,7 +86,7 @@ export class BootScene extends Phaser.Scene {
     playerGraphics.generateTexture('player', 48, 48);
     playerGraphics.destroy();
 
-    // Normal Enemy (Angry Red Blob)
+    // Basic Enemy (Angry Red Blob)
     const enemyGraphics = this.make.graphics({ x: 0, y: 0 });
     // Body
     enemyGraphics.fillStyle(0xff4444, 1);
@@ -110,7 +110,7 @@ export class BootScene extends Phaser.Scene {
     enemyGraphics.arc(16, 24, 6, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340));
     enemyGraphics.strokePath();
     
-    enemyGraphics.generateTexture('enemy', 32, 32);
+    enemyGraphics.generateTexture('enemy_basic', 32, 32);
     enemyGraphics.destroy();
 
     // Fast enemy (flaming)
@@ -153,6 +153,47 @@ export class BootScene extends Phaser.Scene {
     
     tankEnemyGraphics.generateTexture('enemy_tank', 48, 48);
     tankEnemyGraphics.destroy();
+
+    // Elite Enemy (Knight/Armored)
+    const eliteGraphics = this.make.graphics({ x: 0, y: 0 });
+    eliteGraphics.fillStyle(0x440088, 1); // Dark Purple
+    eliteGraphics.fillCircle(20, 20, 18);
+    eliteGraphics.lineStyle(3, 0xffd700, 1); // Gold trim
+    eliteGraphics.strokeCircle(20, 20, 18);
+    // Spikes
+    eliteGraphics.fillStyle(0xffd700, 1);
+    eliteGraphics.fillTriangle(20, 0, 26, 10, 14, 10); // Top spike
+    eliteGraphics.fillTriangle(40, 20, 30, 14, 30, 26); // Right spike
+    eliteGraphics.fillTriangle(0, 20, 10, 14, 10, 26); // Left spike
+    eliteGraphics.generateTexture('enemy_elite', 40, 40);
+    eliteGraphics.destroy();
+
+    // Boss Enemy (Demon)
+    const bossGraphics = this.make.graphics({ x: 0, y: 0 });
+    bossGraphics.fillStyle(0x220000, 1); // Dark Red/Black
+    bossGraphics.fillCircle(40, 40, 36);
+    // Horns
+    bossGraphics.fillStyle(0xdddddd, 1);
+    bossGraphics.fillTriangle(20, 20, 10, 0, 30, 10); // Left horn
+    bossGraphics.fillTriangle(60, 20, 70, 0, 50, 10); // Right horn
+    // Eyes
+    bossGraphics.fillStyle(0xff0000, 1);
+    bossGraphics.fillCircle(25, 35, 8);
+    bossGraphics.fillCircle(55, 35, 8);
+    bossGraphics.generateTexture('enemy_boss', 80, 80);
+    bossGraphics.destroy();
+
+    // Ranged Enemy (Eye/Drone)
+    const rangedGraphics = this.make.graphics({ x: 0, y: 0 });
+    rangedGraphics.fillStyle(0x006600, 1); // Dark Green
+    rangedGraphics.fillCircle(16, 16, 14);
+    // Eye
+    rangedGraphics.fillStyle(0xccffcc, 1);
+    rangedGraphics.fillCircle(16, 16, 8);
+    rangedGraphics.fillStyle(0x000000, 1);
+    rangedGraphics.fillCircle(16, 16, 3);
+    rangedGraphics.generateTexture('enemy_ranged', 32, 32);
+    rangedGraphics.destroy();
 
     // Bullet (cyan projectile)
     const bulletGraphics = this.make.graphics({ x: 0, y: 0 });

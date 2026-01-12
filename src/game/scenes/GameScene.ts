@@ -189,7 +189,8 @@ export class GameScene extends Phaser.Scene {
         this.player.autoAttack(this.enemies, this.bullets, time);
 
         // Update XP gems with player magnet range
-        this.xpGems.getChildren().forEach((gem: any) => {
+        this.xpGems.getChildren().forEach((gemObj) => {
+            const gem = gemObj as XPGem;
             gem.magnetDistance = this.player.magnetRange;
         });
 
@@ -227,9 +228,20 @@ export class GameScene extends Phaser.Scene {
         const y = this.player.y + Math.sin(angle) * spawnDistance;
 
         // Enemy type based on wave
-        let enemyType: 'normal' | 'fast' | 'tank' = 'normal';
-        if (this.wave >= 3 && Math.random() < 0.3) {
-            enemyType = Math.random() < 0.5 ? 'fast' : 'tank';
+        let enemyType: 'basic' | 'fast' | 'tank' | 'elite' | 'boss' | 'ranged' = 'basic';
+
+        // Wave progression logic
+        if (this.wave >= 10 && this.wave % 10 === 0 && Math.random() < 0.05) {
+            enemyType = 'boss';
+        } else if (this.wave >= 5 && Math.random() < 0.1) {
+            enemyType = 'elite';
+        } else if (this.wave >= 3) {
+            const rand = Math.random();
+            if (rand < 0.2) enemyType = 'fast';
+            else if (rand < 0.35) enemyType = 'tank';
+            else if (rand < 0.5) enemyType = 'ranged';
+        } else if (this.wave >= 2 && Math.random() < 0.3) {
+            enemyType = 'fast';
         }
 
         const enemy = new Enemy(this, x, y, enemyType, this.wave);

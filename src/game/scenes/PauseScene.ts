@@ -40,13 +40,13 @@ export class PauseScene extends Phaser.Scene {
     });
 
     // Fullscreen button
-    this.createButton(width / 2, height * 0.8, 'FULLSCREEN', () => {
-        if (this.scale.isFullscreen) {
-            this.scale.stopFullscreen();
-        } else {
-            this.scale.startFullscreen();
-        }
-    });
+    // this.createButton(width / 2, height * 0.8, 'FULLSCREEN', () => {
+    //     if (this.scale.isFullscreen) {
+    //         this.scale.stopFullscreen();
+    //     } else {
+    //         this.scale.startFullscreen();
+    //     }
+    // });
 
     // ESC to resume
     this.input.keyboard!.on('keydown-ESC', () => {

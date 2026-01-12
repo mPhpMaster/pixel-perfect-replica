@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 
-type EnemyType = 'normal' | 'fast' | 'tank';
+type EnemyType = 'basic' | 'fast' | 'tank' | 'elite' | 'boss' | 'ranged';
 
 const ENEMY_CONFIGS = {
-  normal: {
-    texture: 'enemy',
+  basic: {
+    texture: 'enemy_basic',
     health: 50,
     speed: 80,
     damage: 10,
@@ -33,6 +33,36 @@ const ENEMY_CONFIGS = {
     scale: 1.2,
     color: 0xff8800,
   },
+  elite: {
+    texture: 'enemy_elite',
+    health: 300,
+    speed: 70,
+    damage: 30,
+    scoreValue: 50,
+    xpValue: 50,
+    scale: 1.1,
+    color: 0x440088,
+  },
+  boss: {
+    texture: 'enemy_boss',
+    health: 2000,
+    speed: 40,
+    damage: 50,
+    scoreValue: 500,
+    xpValue: 500,
+    scale: 1.5,
+    color: 0x220000,
+  },
+  ranged: {
+    texture: 'enemy_ranged',
+    health: 40,
+    speed: 60,
+    damage: 15,
+    scoreValue: 20,
+    xpValue: 20,
+    scale: 0.9,
+    color: 0x006600,
+  }
 };
 
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
@@ -45,11 +75,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private player: Phaser.Physics.Arcade.Sprite | null = null;
   private particles: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private isStunned = false;
+  private enemyType: EnemyType;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, type: EnemyType = 'normal', wave: number = 1) {
+  constructor(scene: Phaser.Scene, x: number, y: number, type: EnemyType = 'basic', wave: number = 1) {
     const config = ENEMY_CONFIGS[type];
     super(scene, x, y, config.texture);
     
+    this.enemyType = type;
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -116,10 +148,24 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       // Move towards player
       const angle = Phaser.Math.Angle.Between(this.x, this.y, this.player.x, this.player.y);
       const body = this.body as Phaser.Physics.Arcade.Body;
-      body.setVelocity(
-        Math.cos(angle) * this.speed,
-        Math.sin(angle) * this.speed
-      );
+      
+      // Ranged enemies stop at a distance
+      if (this.enemyType === 'ranged') {
+          const distance = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
+          if (distance > 200) {
+              body.setVelocity(
+                Math.cos(angle) * this.speed,
+                Math.sin(angle) * this.speed
+              );
+          } else {
+              body.setVelocity(0, 0);
+          }
+      } else {
+          body.setVelocity(
+            Math.cos(angle) * this.speed,
+            Math.sin(angle) * this.speed
+          );
+      }
 
       // Face direction of movement
       this.setFlipX(this.player.x < this.x);
@@ -137,15 +183,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         });
     }
 
-    // Knockback
-    if (this.player && this.active) {
+    // Knockback (Bosses resist knockback)
+    if (this.player && this.active && this.enemyType !== 'boss') {
       const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.x, this.y);
       const body = this.body as Phaser.Physics.Arcade.Body;
       
       this.isStunned = true;
+      const knockbackForce = this.enemyType === 'tank' || this.enemyType === 'elite' ? 100 : 250;
+      
       body.setVelocity(
-        Math.cos(angle) * 250,
-        Math.sin(angle) * 250
+        Math.cos(angle) * knockbackForce,
+        Math.sin(angle) * knockbackForce
       );
 
       // Reset stun
