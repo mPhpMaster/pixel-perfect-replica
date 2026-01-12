@@ -16,8 +16,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   magnetRange = 100;
   
   // Dash stats
-  dashSpeedMultiplier = 3;
-  dashDuration = 200;
+  dashSpeedMultiplier = 10;
+  dashDuration = 100;
   dashCooldown = 1000;
   lastDashTime = 0;
   isDashing = false;
