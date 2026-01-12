@@ -13,7 +13,7 @@ const BOSS_CONFIGS = {
         scale: 1.8,
         color: 0xff2200,
         attackPattern: 'charge',
-        attackCooldown: 3000,
+        attackCooldown: 5000,
     },
     golem: {
         name: 'STONE GOLEM',
@@ -25,7 +25,7 @@ const BOSS_CONFIGS = {
         scale: 2,
         color: 0x886644,
         attackPattern: 'slam',
-        attackCooldown: 3000,
+        attackCooldown: 7000,
     },
     specter: {
         name: 'SHADOW SPECTER',
@@ -37,7 +37,7 @@ const BOSS_CONFIGS = {
         scale: 2.5,
         color: 0x6622aa,
         attackPattern: 'teleport',
-        attackCooldown: 7000,
+        attackCooldown: 10000,
     },
 };
 
@@ -339,7 +339,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
         return false;
     }
 
-    private die(): void {
+    die(): void {
         if (this.particles) {
             this.particles.stop();
             this.scene.time.delayedCall(1000, () => {

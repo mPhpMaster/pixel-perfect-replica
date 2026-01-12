@@ -209,7 +209,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return false;
   }
 
-  private die(): void {
+  die(): void {
     if (this.particles) {
         this.particles.stop();
         // Let existing particles fade out

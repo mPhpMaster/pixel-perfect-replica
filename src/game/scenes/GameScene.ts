@@ -180,7 +180,28 @@ export class GameScene extends Phaser.Scene {
         });
 
         this.input.keyboard!.on('keydown-F6', (event) => {
+            event.preventDefault();
             this.player.setInvulnerable(!this.player.isInvulnerable);
+        });
+
+        this.input.keyboard!.on('keydown-F7', (event) => {
+            event.preventDefault();
+
+            this.enemies.getChildren().forEach((enemyObj: Enemy, index: number) => {
+                this.time.delayedCall(index * 100, () => enemyObj.die());
+            });
+            this.bosses.getChildren().forEach((bossObj: Boss, index: number) => {
+                this.time.delayedCall(index * 100, () => bossObj.die());
+            });
+            this.bullets.getChildren().forEach((obj: Bullet, index: number) => {
+                this.time.delayedCall(index * 50, () => obj.destroy());
+            });
+            this.xpGems.getChildren().forEach((obj: XPGem, index: number) => {
+                this.time.delayedCall(index * 50, () => obj.createTrail());
+            });
+            this.healthPickups.getChildren().forEach((obj: HealthPickup, index: number) => {
+                this.time.delayedCall(index * 50, () => obj.destroy());
+            });
         });
 
         // Collisions
@@ -323,6 +344,13 @@ export class GameScene extends Phaser.Scene {
             waveProgress: this.waveTimer / this.waveDuration,
             score: this.score,
             kills: this.killCount,
+            bossActive: this.bossActive,
+            // Player stats
+            damage: this.player.damage,
+            speed: this.player.speed,
+            projectiles: this.player.projectileCount,
+            attackSpeed: this.player.attackSpeed,
+            magnetRange: this.player.magnetRange,
         });
     }
 

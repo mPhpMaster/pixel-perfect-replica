@@ -10,6 +10,7 @@ export class HUDScene extends Phaser.Scene {
     private waveTimerBar!: Phaser.GameObjects.Graphics;
     private scoreText!: Phaser.GameObjects.Text;
     private bossIndicator!: Phaser.GameObjects.Text;
+    private statsText!: Phaser.GameObjects.Text;
     private gameScene!: GameScene;
     private isMobile = false;
 
@@ -31,6 +32,14 @@ export class HUDScene extends Phaser.Scene {
             fontFamily: '"Press Start 2P"',
             fontSize: '10px',
             color: '#ff6666',
+        });
+
+        // Stats display (below health bar)
+        this.statsText = this.add.text(20, 50 + 20, '', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            color: '#cccccc',
+            lineSpacing: 4,
         });
 
         // XP bar (bottom of screen)
@@ -73,7 +82,7 @@ export class HUDScene extends Phaser.Scene {
 
         // Mobile controls hint
         if (this.isMobile) {
-            const hint = this.add.text(20, height - 50, '← JOYSTICK', {
+            const hint = this.add.text(20, height - 50, '← JOYSTICK | DOUBLE TAP TO DASH', {
                 fontFamily: '"Press Start 2P"',
                 fontSize: '8px',
                 color: '#00d4aa',
@@ -90,6 +99,7 @@ export class HUDScene extends Phaser.Scene {
         // Listen for updates
         this.gameScene.events.on('updateHUD', this.updateHUD, this);
     }
+
     private updateHUD(data: {
         health: number;
         maxHealth: number;
@@ -101,6 +111,11 @@ export class HUDScene extends Phaser.Scene {
         score: number;
         kills?: number;
         bossActive?: boolean;
+        damage?: number;
+        speed?: number;
+        projectiles?: number;
+        attackSpeed?: number;
+        magnetRange?: number;
     }): void {
         const {width, height} = this.cameras.main;
 
@@ -119,6 +134,18 @@ export class HUDScene extends Phaser.Scene {
         const healthWidth = healthPercent * 196;
         this.healthBar.fillRoundedRect(22, 42, Math.max(0, healthWidth), 16, 3);
         this.healthText.setText(`HP: ${Math.floor(data.health)}/${data.maxHealth}`);
+
+        // Update stats text
+        if (data.damage !== undefined) {
+            const attackSpeedText = data.attackSpeed ? `${(1000 / data.attackSpeed).toFixed(1)}/s` : '-';
+            this.statsText.setText(
+                `DMG: ${data.damage}\n` +
+                `SPD: ${data.speed}\n` +
+                `PROJ: ${data.projectiles}\n` +
+                `ATK SPD: ${attackSpeedText}\n` +
+                `MAGR: ${data.magnetRange}`
+            );
+        }
 
         // XP bar
         this.xpBar.clear();

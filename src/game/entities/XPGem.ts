@@ -108,7 +108,7 @@ export class XPGem extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  private createTrail(): void {
+  createTrail(): void {
       const trail = this.scene.add.image(this.x, this.y, 'xp_gem');
       trail.setTint(0xaa44ff);
       trail.setAlpha(0.4);
