@@ -302,8 +302,6 @@ export class GameScene extends Phaser.Scene {
 
         // Update bosses
         this.bosses.getChildren().forEach((bossObj) => {
-            if (this.isPaused) return;
-
             const boss = bossObj as Boss;
             boss.update(time, delta);
         });
@@ -533,24 +531,32 @@ export class GameScene extends Phaser.Scene {
     private showUpgradeSelection(): void {
         this.isPaused = true;
         this.physics.pause();
+        this.time.paused = true;
+        this.tweens.pauseAll();
         this.scene.launch('UpgradeScene', {gameScene: this});
     }
 
     resumeFromUpgrade(): void {
         this.isPaused = false;
         this.physics.resume();
+        this.time.paused = false;
+        this.tweens.resumeAll();
     }
 
     pauseGame(): void {
         if (this.isPaused) return;
         this.isPaused = true;
         this.physics.pause();
+        this.time.paused = true;
+        this.tweens.pauseAll();
         this.scene.launch('PauseScene', {gameScene: this});
     }
 
     resumeGame(): void {
         this.isPaused = false;
         this.physics.resume();
+        this.time.paused = false;
+        this.tweens.resumeAll();
         this.scene.stop('PauseScene');
     }
 
