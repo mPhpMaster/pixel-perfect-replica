@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import {GameScene} from "@/game/scenes/GameScene.ts";
 
 type BossType = 'demon' | 'golem' | 'specter';
 
@@ -56,8 +57,6 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     private specialAttackTimer = 0;
     private specialAttackCooldown = 3000;
     private isAttacking = false;
-    private healthBar!: Phaser.GameObjects.Graphics;
-    private nameText!: Phaser.GameObjects.Text;
     private particles: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
 
     constructor(scene: Phaser.Scene, x: number, y: number, type: BossType = 'demon', wave: number = 5) {
@@ -101,9 +100,6 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
             ease: 'Back.easeOut',
         });
 
-        // Create boss health bar
-        this.createHealthBar();
-
         // Create particles
         this.particles = scene.add.particles(0, 0, 'flare', {
             speed: {min: 30, max: 80},
@@ -120,26 +116,11 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
         scene.cameras.main.shake(500, 0.02);
     }
 
-    private createHealthBar(): void {
-        this.healthBar = this.scene.add.graphics();
-        this.healthBar.setDepth(100);
-
-        this.nameText = this.scene.add.text(0, 0, this.bossName, {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '12px',
-            color: '#ff4444',
-            stroke: '#000000',
-            strokeThickness: 3,
-        });
-        this.nameText.setOrigin(0.5);
-        this.nameText.setDepth(100);
-    }
-
     update(time: number, delta: number): void {
         if (this.scene.game.isPaused) return;
 
         if (!this.player) {
-            const gameScene = this.scene as any;
+            const gameScene = this.scene as GameScene;
             if (gameScene.player) {
                 this.player = gameScene.player;
             }
@@ -165,37 +146,6 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
                 this.specialAttackTimer = 0;
             }
         }
-
-        // Update health bar position
-        this.updateHealthBar();
-    }
-
-    private updateHealthBar(): void {
-        const {width} = this.scene.cameras.main;
-        const barWidth = 300;
-        const barHeight = 20;
-        const x = (width - barWidth) / 2;
-        const y = 80;
-
-        this.healthBar.clear();
-
-        // Background
-        this.healthBar.fillStyle(0x330000, 0.8);
-        this.healthBar.fillRoundedRect(x, y, barWidth, barHeight, 4);
-
-        // Border
-        this.healthBar.lineStyle(2, 0xff4444, 1);
-        this.healthBar.strokeRoundedRect(x, y, barWidth, barHeight, 4);
-
-        // Health fill
-        const healthPercent = this.health / this.maxHealth;
-        this.healthBar.fillStyle(this.bossColor, 1);
-        this.healthBar.fillRoundedRect(x + 2, y + 2, (barWidth - 4) * healthPercent, barHeight - 4, 3);
-
-        // Name text
-        this.nameText.setPosition(width / 2, y - 15);
-        this.nameText.setScrollFactor(0);
-        this.healthBar.setScrollFactor(0);
     }
 
     private performSpecialAttack(): void {
@@ -450,10 +400,6 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
         // Epic death animation
         this.scene.cameras.main.flash(500, 255, 100, 0);
         this.scene.cameras.main.shake(500, 0.03);
-
-        // Cleanup UI
-        this.healthBar.destroy();
-        this.nameText.destroy();
 
         // Death animation
         this.scene.tweens.add({

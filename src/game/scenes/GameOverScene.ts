@@ -68,7 +68,7 @@ export class GameOverScene extends Phaser.Scene {
     killsText.setOrigin(0.5);
 
     // Coins earned
-    const coinsText = this.add.text(width / 2, statsY + 120, `COINS EARNED: +${this.coinsEarned} 💰`, {
+    const coinsText = this.add.text(width / 2, statsY + 120, `COINS EARNED: ${this.coinsEarned} 💰`, {
       fontFamily: '"Press Start 2P"',
       fontSize: '12px',
       color: '#ffdd00',

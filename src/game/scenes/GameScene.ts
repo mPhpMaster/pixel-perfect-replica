@@ -58,6 +58,7 @@ export class GameScene extends Phaser.Scene {
     private virtualJoystick: VirtualJoystick | null = null;
     private isMobile = false;
     private lastTapTime = 0;
+    private canMove = false;
 
     constructor() {
         super({key: 'GameScene'});
@@ -80,6 +81,7 @@ export class GameScene extends Phaser.Scene {
         this.bossActive = false;
         this.targetPosition = null;
         this.lightningTimer = 0;
+        this.canMove = false;
 
         // Reset weapons
         this.orbitShield = null;
@@ -153,11 +155,18 @@ export class GameScene extends Phaser.Scene {
                         dirY = vec.y;
                     }
 
-                    this.player.attemptDash(dirX, dirY);
+                    if (this.player.attemptDash(dirX, dirY)) {
+                        this.targetPosition = null; // Clear target on dash
+                    }
                 }
                 this.lastTapTime = now;
             });
         }
+
+        // Enable movement after a short delay to prevent initial click from registering
+        this.time.delayedCall(500, () => {
+            this.canMove = true;
+        });
 
         // ESC for pause
         this.input.keyboard!.on('keydown-ESC', () => {
@@ -263,7 +272,7 @@ export class GameScene extends Phaser.Scene {
         } else if (moveX !== 0 || moveY !== 0) {
             // Keyboard input overrides mouse target
             this.targetPosition = null;
-        } else if (!this.isMobile) {
+        } else if (!this.isMobile && this.canMove) {
             // Mouse input (desktop only)
             const pointer = this.input.activePointer;
             if (pointer.isDown) {
@@ -291,7 +300,9 @@ export class GameScene extends Phaser.Scene {
 
         // Dash input (Keyboard)
         if (Phaser.Input.Keyboard.JustDown(this.dashKey)) {
-            this.player.attemptDash(moveX, moveY);
+            if (this.player.attemptDash(moveX, moveY)) {
+                this.targetPosition = null; // Clear target on dash
+            }
         }
 
         this.player.move(moveX, moveY);
@@ -334,6 +345,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         // Update HUD
+        const activeBoss = this.bosses.getFirstAlive() as Boss | null;
         this.events.emit('updateHUD', {
             health: this.player.health,
             maxHealth: this.player.maxHealth,
@@ -345,6 +357,10 @@ export class GameScene extends Phaser.Scene {
             score: this.score,
             kills: this.killCount,
             bossActive: this.bossActive,
+            bossHealth: activeBoss ? activeBoss.health : 0,
+            bossMaxHealth: activeBoss ? activeBoss.maxHealth : 0,
+            bossName: activeBoss ? activeBoss.bossName : '',
+            bossColor: activeBoss ? activeBoss.bossColor : 0,
             // Player stats
             damage: this.player.damage,
             speed: this.player.speed,

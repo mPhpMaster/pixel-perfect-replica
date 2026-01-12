@@ -49,7 +49,8 @@ export class PauseScene extends Phaser.Scene {
     // });
 
     // ESC to resume
-    this.input.keyboard!.on('keydown-ESC', () => {
+    this.input.keyboard!.on('keydown-ESC', (event) => {
+        event.preventDefault();
       this.gameScene.resumeGame();
     });
   }

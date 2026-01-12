@@ -46,15 +46,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     move(dirX: number, dirY: number): void {
         const body = this.body as Phaser.Physics.Arcade.Body;
 
-        if (this.isDashing) {
-            body.setVelocity(
-                this.dashDirection.x * this.speed * this.dashSpeedMultiplier,
-                this.dashDirection.y * this.speed * this.dashSpeedMultiplier
-            );
-            this.createDashTrail();
-            return;
-        }
-
         if (dirX === 0 && dirY === 0) {
             body.setVelocity(0, 0);
             return;
@@ -67,6 +58,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // Flip sprite based on direction
         if (dirX < 0) this.setFlipX(true);
         else if (dirX > 0) this.setFlipX(false);
+
+        if (this.isDashing) {
+            console.log(`this.dashDirection: `, {...this.dashDirection});
+
+            body.setVelocity(
+                this.dashDirection.x * this.speed * this.dashSpeedMultiplier,
+                this.dashDirection.y * this.speed * this.dashSpeedMultiplier
+            );
+            this.createDashTrail();
+            return;
+        }
+
     }
 
     attemptDash(dirX: number, dirY: number): boolean {
@@ -87,8 +90,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // Invulnerable during dash
         this.invulnerable = true;
 
-        // Dash sound or effect could go here
-
+        // Dash effect could go here
+        // todo: Dash sound could go here
         this.scene.time.delayedCall(this.dashDuration, () => {
             this.isDashing = false;
             this.invulnerable = this.isInvulnerable;
@@ -119,7 +122,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    autoAttack(enemies: Phaser.GameObjects.Group, bullets: Phaser.GameObjects.Group, time: number): void {
+    autoAttack(enemies: Phaser.GameObjects.Group, bullets: Phaser.GameObjects.Group, time: number): void
+    {
         if (time - this.lastAttackTime < this.attackSpeed) return;
 
         // Find nearest enemy
@@ -205,12 +209,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     update(time: number, delta: number): void {
-        if(this.isInvulnerable) {
+        if(this.isInvulnerable || this.invulnerable) {
             this.invulnerable = true;
-        }
-
-        // Invulnerability blink effect
-        if (this.invulnerable) {
+            // Invulnerability blink effect
             this.alpha = Math.sin(time * 0.02) > 0 ? 1 : 0.5;
         } else {
             this.alpha = 1;
