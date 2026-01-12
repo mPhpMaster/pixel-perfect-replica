@@ -385,7 +385,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     private spawnBoss(): void {
-        const bossTypes: Array<'demon' | 'golem' | 'specter'> = ['specter','demon', 'golem', 'specter'];
+        const bossTypes: Array<'demon' | 'golem' | 'specter'> = ['demon', 'golem', 'specter'];
         const bossType = bossTypes[Math.floor((this.wave / 5 - 1) % 3)];
         
         const spawnDistance = 500;
