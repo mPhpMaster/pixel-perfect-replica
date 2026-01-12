@@ -129,17 +129,31 @@ export class GameScene extends Phaser.Scene {
 
         // Virtual joystick for mobile
         if (this.isMobile) {
+            this.input.addPointer(2); // Ensure enough pointers for multi-touch
             this.virtualJoystick = new VirtualJoystick(this, 120, GAME_HEIGHT - 140);
             
             // Double tap to dash (Mobile only)
             this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
                 const now = this.time.now;
-                if (now - this.lastTapTime < 300) {
+                if (now - this.lastTapTime < 400) { // Increased threshold
                     // Double tap detected
-                    const dx = pointer.worldX - this.player.x;
-                    const dy = pointer.worldY - this.player.y;
-                    const vec = new Phaser.Math.Vector2(dx, dy).normalize();
-                    this.player.attemptDash(vec.x, vec.y);
+                    let dirX = 0;
+                    let dirY = 0;
+
+                    // If moving with joystick, dash in that direction
+                    if (this.virtualJoystick && (this.virtualJoystick.forceX !== 0 || this.virtualJoystick.forceY !== 0)) {
+                        dirX = this.virtualJoystick.forceX;
+                        dirY = this.virtualJoystick.forceY;
+                    } else {
+                        // Otherwise dash towards the tap
+                        const dx = pointer.worldX - this.player.x;
+                        const dy = pointer.worldY - this.player.y;
+                        const vec = new Phaser.Math.Vector2(dx, dy).normalize();
+                        dirX = vec.x;
+                        dirY = vec.y;
+                    }
+
+                    this.player.attemptDash(dirX, dirY);
                 }
                 this.lastTapTime = now;
             });
@@ -163,6 +177,10 @@ export class GameScene extends Phaser.Scene {
                 return;
             }
             this.player.pendingLevelUp = true;
+        });
+
+        this.input.keyboard!.on('keydown-F6', (event) => {
+            this.player.setInvulnerable(!this.player.isInvulnerable);
         });
 
         // Collisions
@@ -367,7 +385,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     private spawnBoss(): void {
-        const bossTypes: Array<'demon' | 'golem' | 'specter'> = ['demon', 'golem', 'specter'];
+        const bossTypes: Array<'demon' | 'golem' | 'specter'> = ['specter','demon', 'golem', 'specter'];
         const bossType = bossTypes[Math.floor((this.wave / 5 - 1) % 3)];
         
         const spawnDistance = 500;
